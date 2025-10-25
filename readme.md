@@ -19,6 +19,6 @@ There's two main ways to do this, we can at least do #1, but ideally both.
 On top of this, we need a server to host the calendar URL (and for updating).
 
 ## Other
-Ideally the site for this will be built in Svelte/Typescript. Why? Because it's simple & efficient.
+Ideally the site/chrome extension for this will be built in Svelte/Typescript. Why? Because it's simple & efficient.
 
 Allow for generating an ICS per class/only importing specific classes?
