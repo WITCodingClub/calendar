@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "WIT-Calendar",
+  "version": "1.0.0",
+  "description": "A Chrome extension to import WIT classes into your calendar!",
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["scripts/immutable/bundle.js", "scripts/init.js"],
+      "css": ["scripts/immutable/assets/style.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "permissions": [
+    "sidePanel",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://selfservice.wit.edu/*"
+  ]
+}
