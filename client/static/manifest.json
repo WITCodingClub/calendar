@@ -9,8 +9,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["scripts/immutable/bundle.js", "scripts/init.js"],
-      "css": ["scripts/immutable/assets/style.css"]
+      "js": ["scripts/init.js"]
     }
   ],
   "background": {
