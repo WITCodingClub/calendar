@@ -1,23 +1,3 @@
-const GOOGLE_ORIGIN = 'https://selfservice.wit.edu/';
-
-chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
-  if (!tab.url) return;
-  const url = new URL(tab.url);
-  
-  if (url.origin === GOOGLE_ORIGIN) {
-    await chrome.sidePanel.setOptions({
-      tabId,
-      path: 'index.html',
-      enabled: true
-    });
-  } else {
-    await chrome.sidePanel.setOptions({
-      tabId,
-      enabled: false
-    });
-  }
-});
-
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && 
       tab.url && 
