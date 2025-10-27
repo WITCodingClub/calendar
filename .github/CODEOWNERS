@@ -1,6 +1,6 @@
 * @Cattn @jaspermayone
 
-/backend/* @jaspermayone
+/backend/** @jaspermayone
 .gitmodules @jaspermayone
 
-/client/* @Cattn
+/client/** @Cattn
