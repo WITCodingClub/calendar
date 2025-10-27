@@ -18,9 +18,13 @@
   "permissions": [
     "sidePanel",
     "scripting",
-    "activeTab"
+    "activeTab",
+    "tabs",
+    "storage",
+    "webNavigation"
   ],
   "host_permissions": [
-    "https://selfservice.wit.edu/*"
+    "https://selfservice.wit.edu/*",
+    "https://heron-selected-literally.ngrok-free.app/*"
   ]
 }

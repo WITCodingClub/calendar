@@ -1,51 +1,56 @@
 <script lang="ts">
     import { Button, TextField } from 'm3-svelte';
+    import { goto } from '$app/navigation';
+    import { onMount } from 'svelte';
 
-    let data: any = $state(null);
+    let email = $state('');
 
-    async function fetchFromCurrentPage() {
-        const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
-        
-        const [currentTab] = await chrome.tabs.query({ 
-            active: true, 
-            currentWindow: true 
-        });
-        
-        const isOnTargetPage = currentTab.url === targetUrl;
-        let tabToUse = currentTab;
-        let shouldCloseTab = false;
-        
-        if (!isOnTargetPage) {
-            tabToUse = await chrome.tabs.create({ url: targetUrl });
-            shouldCloseTab = true;
-            
-            await new Promise<void>((resolve) => {
-                const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
-                    if (tabId === tabToUse.id && changeInfo.status === 'complete') {
-                        chrome.tabs.onUpdated.removeListener(listener);
-                        resolve();
-                    }
-                };
-                chrome.tabs.onUpdated.addListener(listener);
-            });
+    async function checkIfLoggedIn() {
+        //@ts-expect-error
+        const jwt_token = await chrome.storage.local.get('jwt_token');
+        if (jwt_token) {
+            goto('/calendar');
         }
-        
-        if (!tabToUse.id) return;
-        
-        const results = await chrome.scripting.executeScript({
-            target: { tabId: tabToUse.id },
-            world: 'MAIN',
-            func: () => {
-                return fetch('https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=', {
-                credentials: 'include'
-                }).then(r => r.json()).catch(e => ({ error: e.message }));
-            }
-        });
+    }
 
-        data = results[0]?.result;
+    onMount(() => {
+        checkIfLoggedIn();
+    });
+
+    async function setupListener() {
+        //@ts-expect-error
+        chrome.storage.onChanged.addListener((changes: any) => {
+            //@ts-expect-error
+            Object.entries(changes).forEach(([key, { newValue }]) => {
+                if (key === 'jwt_token' && newValue) {
+                    goto('/calendar');
+                }
+            });
+        });
+    }
+
+    async function signIn() {
+        const API_BASE_URL = 'https://heron-selected-literally.ngrok-free.app';
         
-        if (shouldCloseTab && tabToUse.id) {
-            await chrome.tabs.remove(tabToUse.id);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/request_magic_link`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                console.log('Magic link sent!', data.message);
+                await setupListener();
+            } else {
+                console.error('Failed to send magic link:', data.error);
+            }
+        } catch (error) {
+            console.error('Network error:', error);
         }
     }
 </script>
@@ -55,16 +60,10 @@
         <h1 class="text-2xl font-bold roboto-flex-wit-main">WIT-Calendar</h1>
     </div>
     <p class="text-sm text-secondary">Verify your email to get started</p>
-    <form class="flex gap-4 justify-center items-center">
-        <TextField label="Email" />
-        <Button variant="filled" square>Sign in</Button>
-    </form>
-
-    <Button variant="filled" square onclick={fetchFromCurrentPage}>Fetch Data</Button>
-    
-    {#if data}
-        <pre class="text-xs bg-surface-container p-4 rounded max-w-4xl overflow-auto max-h-96">{JSON.stringify(data, null, 2)}</pre>
-    {/if}
+    <div class="flex flex-row gap-4 justify-center items-center">
+        <TextField bind:value={email} label="Email" />
+        <Button onclick={signIn} variant="filled" square>Sign in</Button>
+    </div>
 </div>
 
 <style>
@@ -83,28 +82,6 @@
             "XOPQ" 140,
             "XTRA" 468,
             "YOPQ" 51,
-            "YTAS" 750,
-            "YTDE" -203,
-            "YTFI" 738,
-            "YTLC" 514,
-            "YTUC" 712;
-    }
-
-    .roboto-flex-wit-other {
-        font-size: 32px;
-        font-family: "Roboto Flex", sans-serif;
-        color: var(--color-primary);
-        font-optical-sizing: 128;
-        font-weight: 267;
-        line-height: 0;
-        font-style: normal;
-        font-variation-settings:
-            "slnt" 0,
-            "wdth" 143,
-            "GRAD" 0,
-            "XOPQ" 175,
-            "XTRA" 468,
-            "YOPQ" 79,
             "YTAS" 750,
             "YTDE" -203,
             "YTFI" 738,
