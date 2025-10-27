@@ -1,3 +1,3 @@
 [submodule "backend"]
 	path = backend
-	url = git@github.com:jaspermayone/witcc-calendar-backend.git
+	url = git@github.com:WIT-Coding-Club/calendar-backend.git
