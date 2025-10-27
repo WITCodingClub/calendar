@@ -1,5 +1,19 @@
 <script lang="ts">
     import { Button, TextField } from 'm3-svelte';
+
+    interface Course {
+        id: number;
+        title: string;
+        start: string;
+        end: string;
+        editable: boolean;
+        allDay: boolean;
+        className: string;
+        term: number;
+        crn: number;
+        subject: string;
+        courseNumber: number;
+    }
     
     let data: any = $state(null);
 
@@ -48,7 +62,19 @@
             }
         });
 
-        data = results[0]?.result;
+        const rawData = results[0]?.result ?? [];
+        if (!Array.isArray(rawData)) {
+            data = [];
+        } else {
+            const seenCrns = new Set<string|number>();
+            data = rawData.filter((course: any) => {
+                if (!course?.crn) return false;
+                if (seenCrns.has(course.crn)) return false;
+                seenCrns.add(course.crn);
+                return true;
+            });
+        }
+
         
         if (shouldCloseTab && tabToUse.id) {
             //@ts-expect-error
@@ -57,10 +83,24 @@
     }
 </script>
 
-<div class="flex flex-col gap-4 justify-center items-center h-full mt-10 w-full">
+<div class="flex flex-col gap-4 justify-center items-center h-full mt-10 w-full px-3">
     <Button variant="filled" square onclick={fetchFromCurrentPage}>Fetch Data</Button>
     
     {#if data}
-        <pre class="text-xs bg-surface-container p-4 rounded max-w-4xl overflow-auto max-h-96">{JSON.stringify(data, null, 2)}</pre>
+        {#each data as course}
+            <div class="flex flex-row justify-between items-center w-full p-4 rounded-md bg-surface-container-low gap-4">
+                <h1 class="text-md font-bold flex-1 min-w-0">
+                    {course.title}
+                </h1>
+                <div class="shrink-0">
+                    <Button 
+                        variant="filled" 
+                        square 
+                    >
+                        Add to Calendar
+                    </Button>
+                </div>
+            </div>
+        {/each}
     {/if}
 </div>
