@@ -1,0 +1,196 @@
+{
+    "classes": [
+        {
+            "title": "COMPUTER SCIENCE I",
+            "course_number": 1000,
+            "schedule_type": "lecture",
+            "term": {
+                "uid": 202610,
+                "season": "fall",
+                "year": 2025
+            },
+            "meeting_times": [
+                {
+                    "begin_time": 1400,
+                    "end_time": 1515,
+                    "start_date": "2025-09-02T00:00:00.000Z",
+                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "location": {
+                        "building": {
+                            "name": "Wentworth Hall",
+                            "abbreviation": "WENTW"
+                        },
+                        "room": 312
+                    },
+                    "monday": false,
+                    "tuesday": true,
+                    "wednesday": false,
+                    "thursday": true,
+                    "friday": false,
+                    "saturday": false,
+                    "sunday": false
+                }
+            ]
+        },
+        {
+            "title": "COMPUTER SCIENCE I - LAB",
+            "course_number": 1000,
+            "schedule_type": "laboratory",
+            "term": {
+                "uid": 202610,
+                "season": "fall",
+                "year": 2025
+            },
+            "meeting_times": [
+                {
+                    "begin_time": 1300,
+                    "end_time": 1445,
+                    "start_date": "2025-09-02T00:00:00.000Z",
+                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "location": {
+                        "building": {
+                            "name": "Wentworth Hall",
+                            "abbreviation": "WENTW"
+                        },
+                        "room": 306
+                    },
+                    "monday": false,
+                    "tuesday": false,
+                    "wednesday": false,
+                    "thursday": false,
+                    "friday": true,
+                    "saturday": false,
+                    "sunday": false
+                }
+            ]
+        },
+        {
+            "title": "ENGLISH II",
+            "course_number": 2200,
+            "schedule_type": "lecture",
+            "term": {
+                "uid": 202610,
+                "season": "fall",
+                "year": 2025
+            },
+            "meeting_times": [
+                {
+                    "begin_time": 800,
+                    "end_time": 945,
+                    "start_date": "2025-09-02T00:00:00.000Z",
+                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "location": {
+                        "building": {
+                            "name": "Dobbs Hall",
+                            "abbreviation": "DOBBS"
+                        },
+                        "room": 307
+                    },
+                    "monday": false,
+                    "tuesday": true,
+                    "wednesday": false,
+                    "thursday": true,
+                    "friday": false,
+                    "saturday": false,
+                    "sunday": false
+                }
+            ]
+        },
+        {
+            "title": "DISCRETE MATHEMATICS",
+            "course_number": 2300,
+            "schedule_type": "lecture",
+            "term": {
+                "uid": 202610,
+                "season": "fall",
+                "year": 2025
+            },
+            "meeting_times": [
+                {
+                    "begin_time": 1000,
+                    "end_time": 1145,
+                    "start_date": "2025-09-02T00:00:00.000Z",
+                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "location": {
+                        "building": {
+                            "name": "Beatty Hall",
+                            "abbreviation": "BEATT"
+                        },
+                        "room": 421
+                    },
+                    "monday": false,
+                    "tuesday": true,
+                    "wednesday": false,
+                    "thursday": true,
+                    "friday": false,
+                    "saturday": false,
+                    "sunday": false
+                }
+            ]
+        },
+        {
+            "title": "CALCULUS 1A",
+            "course_number": 1776,
+            "schedule_type": "lecture",
+            "term": {
+                "uid": 202610,
+                "season": "fall",
+                "year": 2025
+            },
+            "meeting_times": [
+                {
+                    "begin_time": 930,
+                    "end_time": 1040,
+                    "start_date": "2025-09-02T00:00:00.000Z",
+                    "end_date": "2025-10-15T23:59:59.000Z",
+                    "location": {
+                        "building": {
+                            "name": "Watson Hall",
+                            "abbreviation": "WATSN"
+                        },
+                        "room": 6
+                    },
+                    "monday": true,
+                    "tuesday": false,
+                    "wednesday": true,
+                    "thursday": false,
+                    "friday": true,
+                    "saturday": false,
+                    "sunday": false
+                }
+            ]
+        },
+        {
+            "title": "CALCULUS 1B",
+            "course_number": 1777,
+            "schedule_type": "lecture",
+            "term": {
+                "uid": 202610,
+                "season": "fall",
+                "year": 2025
+            },
+            "meeting_times": [
+                {
+                    "begin_time": 930,
+                    "end_time": 1040,
+                    "start_date": "2025-10-15T00:00:00.000Z",
+                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "location": {
+                        "building": {
+                            "name": "Watson Hall",
+                            "abbreviation": "WATSN"
+                        },
+                        "room": 6
+                    },
+                    "monday": true,
+                    "tuesday": false,
+                    "wednesday": true,
+                    "thursday": false,
+                    "friday": true,
+                    "saturday": false,
+                    "sunday": false
+                }
+            ]
+        }
+    ]
+}
