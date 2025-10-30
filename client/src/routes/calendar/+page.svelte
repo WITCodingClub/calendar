@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { Button, Tabs } from 'm3-svelte';
-    import { slide } from 'svelte/transition';
+    import { Button, Tabs, TextFieldOutlined, SelectOutlined } from 'm3-svelte';
+    import { slide, fade, scale } from 'svelte/transition';
     import sampleData from './message.json';
 
     interface Building {
@@ -14,8 +14,8 @@
     }
 
     interface MeetingTime {
-        begin_time: number;
-        end_time: number;
+        begin_time: string;
+        end_time: string;
         start_date: string;
         end_date: string;
         location: Location;
@@ -46,6 +46,7 @@
     let jwt_token: string | null = $state(null);
     let processedData: Course[] | null = $state(null);
     let expandedCourses = $state(new Set<number>());
+    let activeCourse: Course | null = $state(null);
 
     function toggleCourse(index: number) {
         const newSet = new Set(expandedCourses);
@@ -81,13 +82,13 @@
         return activeDays.map(day => ({ meeting, day }));
     }
 
-    function getEarliestDayAndTime(course: Course): { dayOrder: number, time: number } {
+    function getEarliestDayAndTime(course: Course): { dayOrder: number, time: string } {
         if (!course.meeting_times || course.meeting_times.length === 0) {
-            return { dayOrder: 999, time: 999999 };
+            return { dayOrder: 999, time: "99:99" };
         }
 
         let earliestDay = 999;
-        let earliestTime = 999999;
+        let earliestTime = "99:99";
 
         for (const meeting of course.meeting_times) {
             for (const day of dayOrder) {
@@ -112,8 +113,26 @@
                 return aSchedule.dayOrder - bSchedule.dayOrder;
             }
 
-            return aSchedule.time - bSchedule.time;
+            return aSchedule.time.localeCompare(bSchedule.time);
         });
+    }
+
+    function getLatestEndHour(courses: Course[]): number {
+        let latestHour = 8;
+        
+        for (const course of courses) {
+            for (const meeting of course.meeting_times) {
+                const endHour = parseInt(meeting.end_time.split(':')[0]);
+                const endMin = parseInt(meeting.end_time.split(':')[1]);
+                const roundedHour = endMin > 0 ? endHour + 1 : endHour;
+                
+                if (roundedHour > latestHour) {
+                    latestHour = roundedHour;
+                }
+            }
+        }
+        
+        return latestHour;
     }
 
     async function fetchFromCurrentPage() {
@@ -190,6 +209,9 @@
     }
 
     let tab = $state("a");
+
+    let notiTime = $state("10");
+    let notiTimeType = $state("minutes");
 </script>
 
 <div class="flex flex-col gap-4 justify-center items-center h-full mt-10 w-full px-3">
@@ -255,7 +277,7 @@
                                                     </span>
                                                     <span class="text-sm text-on-surface-variant">
                                                         {day ? day.label : ''}
-                                                        • {new Date(meeting.begin_time * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - {new Date(meeting.end_time * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                                        • {meeting.begin_time} - {meeting.end_time}
                                                     </span>
                                                 </div>
                                             {/each}
@@ -268,5 +290,108 @@
                 </div>
             {/each}
         {/if}
+    {:else if tab === "b"}
+        {#if processedData}
+            {@const latestHour = getLatestEndHour(processedData)}
+            {@const numHours = latestHour - 8 + 1}
+            <div class="flex flex-col w-full h-full overflow-hidden">
+                <div class="flex-1 overflow-x-auto overflow-y-hidden">
+                    <div class="inline-flex flex-col min-w-full h-full">
+                        <div class="flex flex-row border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-10">
+                            <div class="w-24 border-r border-outline-variant"></div>
+                            {#each Array(numHours) as _, i}
+                                {@const hour = i + 8}
+                                <div class="w-32 border-r border-outline-variant flex items-center justify-center py-2">
+                                    <span class="text-xs text-on-surface-variant">{hour > 12 ? hour - 12 : hour}:00 {hour >= 12 ? 'PM' : 'AM'}</span>
+                                </div>
+                            {/each}
+                        </div>
+                        
+                        {#each dayOrder.slice(0, 5) as day}
+                            <div class="flex flex-row flex-1 min-h-[120px] border-b border-outline-variant relative">
+                                <div class="w-24 border-r border-outline-variant flex items-center justify-center bg-surface-container-low left-0 z-5">
+                                    <span class="font-medium text-sm">{day.label}</span>
+                                </div>
+                                
+                                <div class="relative flex-1 flex">
+                                    {#each Array(numHours) as _, i}
+                                        <div class="w-32 border-r border-outline-variant"></div>
+                                    {/each}
+                                    
+                                    {#each processedData as course}
+                                        {#each course.meeting_times as meeting}
+                                            {#if meeting[day.key as keyof MeetingTime]}
+                                                {@const startHour = parseInt(meeting.begin_time.split(':')[0])}
+                                                {@const startMin = parseInt(meeting.begin_time.split(':')[1])}
+                                                {@const endHour = parseInt(meeting.end_time.split(':')[0])}
+                                                {@const endMin = parseInt(meeting.end_time.split(':')[1])}
+                                                {@const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8}
+                                                {@const width = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) / 60 * 8}
+                                                {@const isLab = course.schedule_type.toLowerCase() === 'laboratory'}
+                                                
+                                                <button
+                                                    class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2 {isLab ? 'bg-tertiary-container border-tertiary' : 'bg-primary-container border-primary'}"
+                                                    style="left: {startOffset}rem; width: {width}rem;"
+                                                    onclick={() => {activeCourse = course}}
+                                                >
+                                                    <div class="font-medium truncate">{course.title}</div>
+                                                    <div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-80">{meeting.begin_time} - {meeting.end_time}</div>
+                                                    <div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-70 text-[10px]">{meeting.location.building.abbreviation} {meeting.location.room}</div>
+                                                </button>
+                                            {/if}
+                                        {/each}
+                                    {/each}
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            </div>
+        {/if}
     {/if}
 </div>
+
+{#if activeCourse && tab === "b"}
+    <div 
+        transition:fade={{ duration: 200 }} 
+        class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
+        role="button"
+        tabindex="-1"
+        onclick={() => activeCourse = null}
+        onkeydown={(e) => e.key === 'Escape' && (activeCourse = null)}
+    >
+        <div 
+            transition:scale={{ duration: 200, start: 0.95 }}
+            class="bg-surface-container-low rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            tabindex="-1"
+            onclick={(e) => e.stopPropagation()}
+            onkeydown={(e) => e.stopPropagation()}
+        >
+            <div class="flex flex-col gap-4 p-6">
+                <h1 class="text-2xl font-bold">{activeCourse.title}</h1>
+                <div class="flex flex-col gap-3">
+                    <h2 class="text-md">Remind me before class</h2>
+                    <div class="flex flex-row gap-2 items-center stuff-moment">
+                        <TextFieldOutlined type="number" label="" bind:value={notiTime} />
+                        <SelectOutlined label=""
+                            options={[
+                            { text: "minutes", value: "minutes" },
+                            { text: "hours", value: "hours" },
+                            { text: "days", value: "days" },
+                            ]}
+                            bind:value={notiTimeType}
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
+
+<style>
+    :global(.stuff-moment div.m3-container) {
+        min-width: 7rem !important;
+    }
+</style>

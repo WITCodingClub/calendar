@@ -8,7 +8,7 @@
     async function checkIfLoggedIn() {
         //@ts-expect-error
         const jwt_token = await chrome.storage.local.get('jwt_token');
-        if (jwt_token) {
+        if (jwt_token && jwt_token.jwt_token) {
             goto('/calendar');
         }
     }

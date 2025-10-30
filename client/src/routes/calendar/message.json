@@ -1,7 +1,7 @@
 {
     "classes": [
         {
-            "title": "COMPUTER SCIENCE I",
+            "title": "Computer Science I",
             "course_number": 1000,
             "schedule_type": "lecture",
             "term": {
@@ -11,8 +11,8 @@
             },
             "meeting_times": [
                 {
-                    "begin_time": 1400,
-                    "end_time": 1515,
+                    "begin_time": "14:00",
+                    "end_time": "15:15",
                     "start_date": "2025-09-02T00:00:00.000Z",
                     "end_date": "2025-12-11T23:59:59.000Z",
                     "location": {
@@ -20,7 +20,7 @@
                             "name": "Wentworth Hall",
                             "abbreviation": "WENTW"
                         },
-                        "room": 312
+                        "room": "312"
                     },
                     "monday": false,
                     "tuesday": true,
@@ -33,7 +33,7 @@
             ]
         },
         {
-            "title": "COMPUTER SCIENCE I - LAB",
+            "title": "Computer Science I - Lab",
             "course_number": 1000,
             "schedule_type": "laboratory",
             "term": {
@@ -43,8 +43,8 @@
             },
             "meeting_times": [
                 {
-                    "begin_time": 1300,
-                    "end_time": 1445,
+                    "begin_time": "13:00",
+                    "end_time": "14:45",
                     "start_date": "2025-09-02T00:00:00.000Z",
                     "end_date": "2025-12-11T23:59:59.000Z",
                     "location": {
@@ -52,7 +52,7 @@
                             "name": "Wentworth Hall",
                             "abbreviation": "WENTW"
                         },
-                        "room": 306
+                        "room": "306"
                     },
                     "monday": false,
                     "tuesday": false,
@@ -65,7 +65,7 @@
             ]
         },
         {
-            "title": "ENGLISH II",
+            "title": "English II",
             "course_number": 2200,
             "schedule_type": "lecture",
             "term": {
@@ -75,8 +75,8 @@
             },
             "meeting_times": [
                 {
-                    "begin_time": 800,
-                    "end_time": 945,
+                    "begin_time": "08:00",
+                    "end_time": "09:45",
                     "start_date": "2025-09-02T00:00:00.000Z",
                     "end_date": "2025-12-11T23:59:59.000Z",
                     "location": {
@@ -84,7 +84,7 @@
                             "name": "Dobbs Hall",
                             "abbreviation": "DOBBS"
                         },
-                        "room": 307
+                        "room": "307"
                     },
                     "monday": false,
                     "tuesday": true,
@@ -97,7 +97,7 @@
             ]
         },
         {
-            "title": "DISCRETE MATHEMATICS",
+            "title": "Discrete Mathematics",
             "course_number": 2300,
             "schedule_type": "lecture",
             "term": {
@@ -107,8 +107,8 @@
             },
             "meeting_times": [
                 {
-                    "begin_time": 1000,
-                    "end_time": 1145,
+                    "begin_time": "10:00",
+                    "end_time": "11:45",
                     "start_date": "2025-09-02T00:00:00.000Z",
                     "end_date": "2025-12-11T23:59:59.000Z",
                     "location": {
@@ -116,7 +116,7 @@
                             "name": "Beatty Hall",
                             "abbreviation": "BEATT"
                         },
-                        "room": 421
+                        "room": "421"
                     },
                     "monday": false,
                     "tuesday": true,
@@ -129,7 +129,7 @@
             ]
         },
         {
-            "title": "CALCULUS 1A",
+            "title": "Calculus 1A",
             "course_number": 1776,
             "schedule_type": "lecture",
             "term": {
@@ -139,8 +139,8 @@
             },
             "meeting_times": [
                 {
-                    "begin_time": 930,
-                    "end_time": 1040,
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
                     "start_date": "2025-09-02T00:00:00.000Z",
                     "end_date": "2025-10-15T23:59:59.000Z",
                     "location": {
@@ -148,7 +148,7 @@
                             "name": "Watson Hall",
                             "abbreviation": "WATSN"
                         },
-                        "room": 6
+                        "room": "006"
                     },
                     "monday": true,
                     "tuesday": false,
@@ -161,7 +161,7 @@
             ]
         },
         {
-            "title": "CALCULUS 1B",
+            "title": "Calculus 1B",
             "course_number": 1777,
             "schedule_type": "lecture",
             "term": {
@@ -171,8 +171,8 @@
             },
             "meeting_times": [
                 {
-                    "begin_time": 930,
-                    "end_time": 1040,
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
                     "start_date": "2025-10-15T00:00:00.000Z",
                     "end_date": "2025-12-11T23:59:59.000Z",
                     "location": {
@@ -180,7 +180,7 @@
                             "name": "Watson Hall",
                             "abbreviation": "WATSN"
                         },
-                        "room": 6
+                        "room": "006"
                     },
                     "monday": true,
                     "tuesday": false,
