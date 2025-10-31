@@ -10,7 +10,7 @@
 
     interface Location {
         building: Building;
-        room: number;
+        room: string;
     }
 
     interface MeetingTime {
@@ -208,10 +208,11 @@
         }
     }
 
-    let tab = $state("a");
+    let tab = $state("b");
 
-    let notiTime = $state("10");
+    let notiTime = $state("30");
     let notiTimeType = $state("minutes");
+    let courseColor = $state("#d50000");
 </script>
 
 <div class="flex flex-col gap-4 justify-center items-center h-full mt-10 w-full px-3">
@@ -220,8 +221,8 @@
     {:else}
         <Tabs secondary={true}
             items={[
-                { name: "List View", value: "a" },
                 { name: "Calendar View", value: "b" },
+                { name: "List View", value: "a" },
             ]}
             bind:tab
     />
@@ -370,7 +371,8 @@
             onkeydown={(e) => e.stopPropagation()}
         >
             <div class="flex flex-col gap-4 p-6">
-                <h1 class="text-2xl font-bold">{activeCourse.title}</h1>
+                <h1 class="text-2xl font-bold mb-2">Edit Calendar Event</h1>
+                <TextFieldOutlined label="Course Title" value={activeCourse.title} />
                 <div class="flex flex-col gap-3">
                     <h2 class="text-md">Remind me before class</h2>
                     <div class="flex flex-row gap-2 items-center stuff-moment">
@@ -384,6 +386,27 @@
                             bind:value={notiTimeType}
                         />
                     </div>
+                    <h2 class="text-md">Color</h2>
+                    <div class="flex flex-row gap-2 items-center">
+                        <div class="w-6 h-6 rounded-full border-2 border-outline other-stuff" style="background-color: {courseColor};"></div>
+                        <SelectOutlined label=""
+                            options={[
+                                { text: "Tomato", value: "#d50000" },
+                                { text: "Flamingo", value: "#e67c73" },
+                                { text: "Tangerine", value: "#f4511e" },
+                                { text: "Banana", value: "#f6bf26" },
+                                { text: "Sage", value: "#33b679" },
+                                { text: "Basil", value: "#0b8043" },
+                                { text: "Peacock", value: "#039be5" },
+                                { text: "Blueberry", value: "#3f51b5" },
+                                { text: "Lavender", value: "#7986cb" },
+                                { text: "Grape", value: "#8e24aa" },
+                                { text: "Graphite", value: "#616161" },
+                            ]}
+                            bind:value={courseColor}
+                        />
+                    </div>
+                    
                 </div>
             </div>
         </div>

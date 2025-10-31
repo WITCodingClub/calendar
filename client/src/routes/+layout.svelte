@@ -12,3 +12,4 @@
 <div class="sidebar-container">
 	{@render children?.()}
 </div>
+
