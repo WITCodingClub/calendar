@@ -4,17 +4,29 @@
     import { onMount } from 'svelte';
 
     let email = $state('');
+    let emailToSignInWith = $state('');
+    let initialEmail = $state(false);
 
     async function checkIfLoggedIn() {
         //@ts-expect-error
         const jwt_token = await chrome.storage.local.get('jwt_token');
         if (jwt_token && jwt_token.jwt_token) {
-            goto('/calendar');
+            goto('/onboard');
+        }
+    }
+
+    async function tryForEmail() {
+        //@ts-expect-error
+        const info = await chrome.identity.getProfileUserInfo();
+        if (info && info.email) {
+            emailToSignInWith = info.email;
+            initialEmail = true;
         }
     }
 
     onMount(() => {
         checkIfLoggedIn();
+        tryForEmail();
     });
 
     async function setupListener() {
@@ -23,7 +35,7 @@
             //@ts-expect-error
             Object.entries(changes).forEach(([key, { newValue }]) => {
                 if (key === 'jwt_token' && newValue) {
-                    goto('/calendar');
+                    goto('/onboard');
                 }
             });
         });
@@ -38,7 +50,7 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ email: email || emailToSignInWith })
             });
             
             const data = await response.json();
@@ -64,6 +76,12 @@
         <TextField bind:value={email} label="Email" />
         <Button onclick={signIn} variant="filled" square>Sign in</Button>
     </div>
+
+    {#if initialEmail}
+        <div class="flex flex-row gap-4 justify-center items-center">
+            <Button onclick={signIn} variant="filled" square>Sign in with: {emailToSignInWith}</Button>
+        </div>
+    {/if}
 </div>
 
 <style>

@@ -21,7 +21,9 @@
     "activeTab",
     "tabs",
     "storage",
-    "webNavigation"
+    "webNavigation",
+    "identity",
+    "identity.email"
   ],
   "host_permissions": [
     "https://selfservice.wit.edu/*",
