@@ -1,69 +1,9 @@
 <script lang="ts">
-    import { Button, TextField } from 'm3-svelte';
+    import { Button } from 'm3-svelte';
     import { goto } from '$app/navigation';
-    import { onMount } from 'svelte';
-
-    let email = $state('');
-    let emailToSignInWith = $state('');
-    let initialEmail = $state(false);
-
-    async function checkIfLoggedIn() {
-        //@ts-expect-error
-        const jwt_token = await chrome.storage.local.get('jwt_token');
-        if (jwt_token && jwt_token.jwt_token) {
-            goto('/onboard');
-        }
-    }
-
-    async function tryForEmail() {
-        //@ts-expect-error
-        const info = await chrome.identity.getProfileUserInfo();
-        if (info && info.email) {
-            emailToSignInWith = info.email;
-            initialEmail = true;
-        }
-    }
-
-    onMount(() => {
-        checkIfLoggedIn();
-        tryForEmail();
-    });
-
-    async function setupListener() {
-        //@ts-expect-error
-        chrome.storage.onChanged.addListener((changes: any) => {
-            //@ts-expect-error
-            Object.entries(changes).forEach(([key, { newValue }]) => {
-                if (key === 'jwt_token' && newValue) {
-                    goto('/onboard');
-                }
-            });
-        });
-    }
 
     async function signIn() {
-        const API_BASE_URL = 'https://heron-selected-literally.ngrok-free.app';
-        
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/request_magic_link`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email: email || emailToSignInWith })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok) {
-                console.log('Magic link sent!', data.message);
-                await setupListener();
-            } else {
-                console.error('Failed to send magic link:', data.error);
-            }
-        } catch (error) {
-            console.error('Network error:', error);
-        }
+        goto('/loading');
     }
 </script>
 
@@ -71,17 +11,27 @@
     <div class="flex flex-row gap-2 mb-2">
         <h1 class="text-2xl font-bold roboto-flex-wit-main">WIT-Calendar</h1>
     </div>
-    <p class="text-sm text-secondary">Verify your email to get started</p>
-    <div class="flex flex-row gap-4 justify-center items-center">
-        <TextField bind:value={email} label="Email" />
-        <Button onclick={signIn} variant="filled" square>Sign in</Button>
+    <div class="bg-surface-container-low p-4 rounded-lg shadow flex flex-col items-start w-full max-w-xl mb-2 mt-4">
+        <p class="text-lg font-semibold text-on-surface mb-2">Welcome! A few things to note:</p>
+        <ul class="list-disc pl-5 space-y-1 text-base text-on-surface-variant">
+            <li>
+                Tabs may open and close automatically when using the extension; this is normal and expected.
+            </li>
+            <li>
+                Please make sure you're signed in here: 
+                <a 
+                    href="https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory" 
+                    target="_blank"
+                    class="text-primary underline break-all"
+                >
+                    selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory
+                </a>
+            </li>
+        </ul>
     </div>
-
-    {#if initialEmail}
-        <div class="flex flex-row gap-4 justify-center items-center">
-            <Button onclick={signIn} variant="filled" square>Sign in with: {emailToSignInWith}</Button>
-        </div>
-    {/if}
+    <div class="flex justify-center items-center peak">
+        <Button onclick={signIn} variant="filled" square>Let's start!</Button>
+    </div>
 </div>
 
 <style>
@@ -105,5 +55,9 @@
             "YTFI" 738,
             "YTLC" 514,
             "YTUC" 712;
+    }
+
+    :global(.peak button) {
+        height: 3rem !important;
     }
 </style>
