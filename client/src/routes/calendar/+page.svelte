@@ -2,6 +2,12 @@
     import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
     import { fade, scale, slide } from 'svelte/transition';
 
+    // todo: use this!
+    interface ResponseData {
+        ics_url: string;
+        classes: Course[];
+    }
+
     interface Building {
         name: string;
         abbreviation: string;
