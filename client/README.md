@@ -1,9 +1,15 @@
 # WIT-Calendar (client)
 
-## Building
-Run ``npm run build`` to build the extension. 
+## Setup
+1. Install ``npm`` on the node.js official website: https://nodejs.org/en/download
+2. Find where it says "Get a prebuilt Node.js for Windows running a x64 architecture"
+   - Select the correct OS and architecture by using the dropdowns
+   - Click the ``"<your OS> Installer (.<ext>)"`` button, then run the installer
 
-Built files will be in ``/client/extension/``
+<img width="688" height="122" src="https://i.imgur.com/wKaPCgR.png" />
+
+3. Run ``npm i`` in this directory (``/client``)
+4. Run ``npm run build`` to build the extension. Built files will be in ``/client/extension/``
 
 ## Testing the Extension
 
