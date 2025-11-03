@@ -1,8 +1,7 @@
 # WIT-Calendar (client)
 
 ## Setup
-1. Install ``npm`` on the node.js official website: https://nodejs.org/en/download
-   - Select the "prebuilt Node.js installer" option.
+1. Install ``npm/node.js``: https://nodejs.org/en/download
 3. Run ``npm i`` in this directory (``/client``)
 4. Run ``npm run build`` to build the extension. Built files will be in ``/client/extension/``
 
