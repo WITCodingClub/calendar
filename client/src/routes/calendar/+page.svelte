@@ -165,6 +165,22 @@
                 //@ts-expect-error
                 chrome.tabs.onUpdated.addListener(listener);
             });
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            try {
+                //@ts-expect-error
+                await chrome.scripting.executeScript({
+                    target: { tabId: tabToUse.id },
+                    func: () => {
+                        return document.readyState === 'complete' && 
+                               typeof fetch !== 'undefined' &&
+                               document.body !== null;
+                    }
+                });
+            } catch (e) {
+                console.error('Page readiness check failed:', e);
+            }
         }
         
         if (!tabToUse.id) return;

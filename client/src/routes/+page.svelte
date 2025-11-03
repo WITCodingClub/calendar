@@ -1,6 +1,19 @@
 <script lang="ts">
     import { Button } from 'm3-svelte';
     import { goto } from '$app/navigation';
+    import { onMount } from 'svelte';
+
+    onMount(() => {
+        checkIfLoggedIn();
+    });
+
+    async function checkIfLoggedIn() {
+        //@ts-expect-error
+        const result = await chrome.storage.local.get('jwt_token');
+        if (result.jwt_token) {
+            goto('/calendar');
+        }
+    }
 
     async function signIn() {
         goto('/loading');
