@@ -1,11 +1,16 @@
 <script lang="ts">
-    import { Button, Tabs, TextFieldOutlined, SelectOutlined } from 'm3-svelte';
-    import { slide, fade, scale } from 'svelte/transition';
-    import sampleData from './message.json';
+    import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
+    import { fade, scale, slide } from 'svelte/transition';
 
     interface Building {
         name: string;
         abbreviation: string;
+    }
+
+    interface Professor {
+        first_name: string;
+        last_name: string;
+        email: string;
     }
 
     interface Location {
@@ -39,9 +44,10 @@
         course_number: number;
         schedule_type: string;
         term: Term;
+        professor: Professor;
         meeting_times: MeetingTime[];
     }
-    
+
     let data: any = $state(null);
     let jwt_token: string | null = $state(null);
     let processedData: Course[] | null = $state(null);
@@ -74,11 +80,11 @@
 
     function splitMeetingByDays(meeting: MeetingTime) {
         const activeDays = dayOrder.filter(day => meeting[day.key as keyof MeetingTime]);
-        
+
         if (activeDays.length <= 1) {
             return [{ meeting, day: activeDays[0] || null }];
         }
-        
+
         return activeDays.map(day => ({ meeting, day }));
     }
 
@@ -119,40 +125,40 @@
 
     function getLatestEndHour(courses: Course[]): number {
         let latestHour = 8;
-        
+
         for (const course of courses) {
             for (const meeting of course.meeting_times) {
                 const endHour = parseInt(meeting.end_time.split(':')[0]);
                 const endMin = parseInt(meeting.end_time.split(':')[1]);
                 const roundedHour = endMin > 0 ? endHour + 1 : endHour;
-                
+
                 if (roundedHour > latestHour) {
                     latestHour = roundedHour;
                 }
             }
         }
-        
+
         return latestHour;
     }
 
     async function fetchFromCurrentPage() {
         const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
-        
+
         //@ts-expect-error
-        const [currentTab] = await chrome.tabs.query({ 
-            active: true, 
-            currentWindow: true 
+        const [currentTab] = await chrome.tabs.query({
+            active: true,
+            currentWindow: true
         });
-        
+
         const isOnTargetPage = currentTab.url === targetUrl;
         let tabToUse = currentTab;
         let shouldCloseTab = false;
-        
+
         if (!isOnTargetPage) {
             //@ts-expect-error
             tabToUse = await chrome.tabs.create({ url: targetUrl });
             shouldCloseTab = true;
-            
+
             await new Promise<void>((resolve) => {
                 //@ts-expect-error
                 const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
@@ -166,9 +172,9 @@
                 chrome.tabs.onUpdated.addListener(listener);
             });
         }
-        
+
         if (!tabToUse.id) return;
-        
+
         //@ts-expect-error
         const results = await chrome.scripting.executeScript({
             target: { tabId: tabToUse.id },
@@ -227,7 +233,7 @@
             bind:tab
     />
     {/if}
-    
+
     {#if tab === "a"}
         {#if processedData}
             {#each sortCoursesBySchedule(processedData) as course, index}
@@ -238,8 +244,8 @@
                         </h1>
                         <div class="shrink-0">
                             <Button
-                                variant="tonal" 
-                                square 
+                                variant="tonal"
+                                square
                                 onclick={() => toggleCourse(index)}
                             >
                                 <span style="display: inline-block; transition: transform 0.3s ease; transform: rotate({expandedCourses.has(index) ? '180deg' : '0deg'})">
@@ -248,7 +254,7 @@
                             </Button>
                         </div>
                     </div>
-                    
+
                     {#if expandedCourses.has(index)}
                         <div transition:slide={{ duration: 300 }} class="px-4 pb-4">
                             <div class="flex flex-col gap-3 pt-2 border-t border-outline-variant">
@@ -256,17 +262,17 @@
                                     <span class="text-sm font-medium text-on-surface-variant">Course Number</span>
                                     <span class="text-sm">{course.course_number}</span>
                                 </div>
-                                
+
                                 <div class="flex flex-col gap-1">
                                     <span class="text-sm font-medium text-on-surface-variant">Schedule Type</span>
                                     <span class="text-sm">{capitalizeFirstLetter(course.schedule_type)}</span>
                                 </div>
-                                
+
                                 <div class="flex flex-col gap-1">
                                     <span class="text-sm font-medium text-on-surface-variant">Term</span>
                                     <span class="text-sm">{capitalizeFirstLetter(course.term.season)} {course.term.year}</span>
                                 </div>
-                                
+
                                 {#if course.meeting_times && course.meeting_times.length > 0}
                                     <div class="flex flex-col gap-2">
                                         <span class="text-sm font-medium text-on-surface-variant">Meeting Times</span>
@@ -307,18 +313,18 @@
                                 </div>
                             {/each}
                         </div>
-                        
+
                         {#each dayOrder.slice(0, 5) as day}
                             <div class="flex flex-row flex-1 min-h-[120px] border-b border-outline-variant relative">
                                 <div class="w-24 border-r border-outline-variant flex items-center justify-center bg-surface-container-low left-0 z-5">
                                     <span class="font-medium text-sm">{day.label}</span>
                                 </div>
-                                
+
                                 <div class="relative flex-1 flex">
                                     {#each Array(numHours) as _, i}
                                         <div class="w-32 border-r border-outline-variant"></div>
                                     {/each}
-                                    
+
                                     {#each processedData as course}
                                         {#each course.meeting_times as meeting}
                                             {#if meeting[day.key as keyof MeetingTime]}
@@ -329,7 +335,7 @@
                                                 {@const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8}
                                                 {@const width = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) / 60 * 8}
                                                 {@const isLab = course.schedule_type.toLowerCase() === 'laboratory'}
-                                                
+
                                                 <button
                                                     class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2 {isLab ? 'bg-tertiary-container border-tertiary' : 'bg-primary-container border-primary'}"
                                                     style="left: {startOffset}rem; width: {width}rem;"
@@ -353,15 +359,15 @@
 </div>
 
 {#if activeCourse && tab === "b"}
-    <div 
-        transition:fade={{ duration: 200 }} 
+    <div
+        transition:fade={{ duration: 200 }}
         class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
         role="button"
         tabindex="-1"
         onclick={() => activeCourse = null}
         onkeydown={(e) => e.key === 'Escape' && (activeCourse = null)}
     >
-        <div 
+        <div
             transition:scale={{ duration: 200, start: 0.95 }}
             class="bg-surface-container-low rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             role="dialog"
@@ -406,7 +412,7 @@
                             bind:value={courseColor}
                         />
                     </div>
-                    
+
                 </div>
             </div>
         </div>
