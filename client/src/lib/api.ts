@@ -5,9 +5,6 @@ export interface BetaAccessError {
 	message: string;
 }
 
-/**
- * Checks if the API response is a beta access error
- */
 export function isBetaAccessError(data: any): data is BetaAccessError {
 	return (
 		data &&
@@ -16,12 +13,6 @@ export function isBetaAccessError(data: any): data is BetaAccessError {
 	);
 }
 
-/**
- * Handles API response and checks for beta access errors
- * Redirects to beta access denied page if detected
- * @param response - Fetch response object
- * @returns The parsed JSON data if no beta error
- */
 export async function handleApiResponse<T>(response: Response): Promise<T> {
 	const data = await response.json();
 
@@ -38,12 +29,6 @@ export async function handleApiResponse<T>(response: Response): Promise<T> {
 	return data as T;
 }
 
-/**
- * Makes an API call with automatic beta access error handling
- * @param url - API endpoint URL
- * @param options - Fetch options
- * @returns The parsed response data
- */
 export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
 	const response = await fetch(url, options);
 	return handleApiResponse<T>(response);
