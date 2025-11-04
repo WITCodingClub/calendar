@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
     import { fade, scale, slide } from 'svelte/transition';
+    import { goto } from '$app/navigation';
 
     // todo: use this!
     interface ResponseData {
@@ -17,6 +18,7 @@
         first_name: string;
         last_name: string;
         email: string;
+        rmp_id?: string;
     }
 
     interface Location {
@@ -43,6 +45,7 @@
         first_name: string;
         last_name: string;
         email: string;
+        rmp_id?: string;
     }
 
     interface Term {
@@ -298,7 +301,16 @@
 
                                 <div class="flex flex-col gap-1">
                                     <span class="text-sm font-medium text-on-surface-variant">Professor</span>
-                                    <span class="text-sm">{capitalizeFirstLetter(course.professor.first_name)} {capitalizeFirstLetter(course.professor.last_name)}</span>
+                                    {#if course.professor.rmp_id}
+                                        <button
+                                            class="text-sm text-primary hover:underline cursor-pointer text-left"
+                                            onclick={() => goto(`/professor/${course.professor.rmp_id}`)}
+                                        >
+                                            {capitalizeFirstLetter(course.professor.first_name)} {capitalizeFirstLetter(course.professor.last_name)}
+                                        </button>
+                                    {:else}
+                                        <span class="text-sm">{capitalizeFirstLetter(course.professor.first_name)} {capitalizeFirstLetter(course.professor.last_name)}</span>
+                                    {/if}
                                 <span class="text-sm text-on-surface-variant"><a href={`mailto:${course.professor.email}`} class="text-primary">{course.professor.email}</a></span>
                                 </div>
 
