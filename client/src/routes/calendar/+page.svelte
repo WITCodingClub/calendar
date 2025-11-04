@@ -1,12 +1,8 @@
 <script lang="ts">
+    import { type Course } from '$lib/types';
+    import type { MeetingTime } from '$lib/types/MeetingTime';
     import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
     import { fade, scale, slide } from 'svelte/transition';
-    import type { MeetingTime } from '$lib/types/MeetingTime';
-    import type { Term } from '$lib/types/Term';
-    import type { Professor } from '$lib/types/Professor';
-    import type { Location } from '$lib/types/Location';
-    import type { Building } from '$lib/types/Building';
-	import type { Course } from '$lib/types/Course';
 
     let data: any = $state(null);
     let jwt_token: string | null = $state(null);
@@ -139,7 +135,7 @@
                 await chrome.scripting.executeScript({
                     target: { tabId: tabToUse.id },
                     func: () => {
-                        return document.readyState === 'complete' && 
+                        return document.readyState === 'complete' &&
                                typeof fetch !== 'undefined' &&
                                document.body !== null;
                     }
