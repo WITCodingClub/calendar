@@ -6,6 +6,14 @@
     let emailToSignInWith: string | null = $state(null);
     let emailToSubmit = $state('');
 
+    async function checkGcalStatus() {
+        //@ts-expect-error
+        const oauth_email = await chrome.storage.local.get('oauth_email');
+        if (oauth_email.oauth_email) {
+            goto('/calendar');
+        }
+    }
+
     async function tryForEmail() {
         //@ts-expect-error
         const info = await chrome.identity.getProfileUserInfo();
@@ -65,6 +73,7 @@
     }
 
     onMount(() => {
+        checkGcalStatus();
         tryForEmail();
         setupListener();
     });
