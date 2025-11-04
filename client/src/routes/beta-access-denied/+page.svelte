@@ -22,9 +22,6 @@
 		await goto(returnPath);
 	}
 
-	function contactSupport() {
-		window.open('mailto:mayonej@wit.edu?subject=Beta Access Request', '_blank');
-	}
 </script>
 
 <div class="flex justify-center items-center min-h-screen bg-surface p-6">
@@ -60,8 +57,8 @@
 
 		<!-- Contact Info -->
 		<div class="bg-secondary-container rounded-lg p-4 mb-6">
-			<p class="text-sm text-on-secondary-container mb-1 font-semibold">Contact Support</p>
-			<p class="text-sm text-on-secondary-container">mayonej@wit.edu</p>
+			<p class="text-sm text-on-secondary-container mb-1 font-semibold">Contact Support (Jasper)</p>
+			<a class="text-sm text-on-secondary-container " href="mailto:mayonej@wit.edu">mayonej@wit.edu</a>
 		</div>
 
 		<!-- Actions -->
@@ -69,14 +66,6 @@
 			<Button variant="filled" onclick={handleRetry} disabled={isRetrying}>
 				{isRetrying ? 'Retrying...' : 'Retry'}
 			</Button>
-			<Button variant="outlined" onclick={contactSupport}>Contact Support</Button>
 		</div>
 	</div>
 </div>
-
-<style>
-	:global(body) {
-		margin: 0;
-		padding: 0;
-	}
-</style>
