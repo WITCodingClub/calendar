@@ -86,7 +86,7 @@
 
     async function signIn() {
         try {
-            const response = await fetch('https://heron-selected-lfgeetrewtegfgdgfdfgdfiterally.ngrok-free.app/api/user/onboard', {
+            const response = await fetch('https://heron-selected-literally.ngrok-free.app/api/user/onboard', {
                 method: 'POST',
                 body: JSON.stringify({email: schoolEmail}),
                 headers: {
