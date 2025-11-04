@@ -1,5 +1,63 @@
 {
+    "ics_url": "https://heron-selected-literally.ngrok-free.app/calendar/vLed02hE7ld-Yj8-8A6Dbk8rDBaKWXRq9K9Iw6Ndxls.ics",
     "classes": [
+        {
+            "title": "Discrete Mathematics",
+            "course_number": 2300,
+            "schedule_type": "lecture",
+            "term": {
+                "uid": 202610,
+                "season": "fall",
+                "year": 2025
+            },
+            "professor": {
+                "first_name": "Gabe",
+                "last_name": "Cunningham",
+                "email": "cunninghamg1@wit.edu"
+            },
+            "meeting_times": [
+                {
+                    "begin_time": "10:00",
+                    "end_time": "11:45",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "location": {
+                        "building": {
+                            "name": "Wentworth Hall",
+                            "abbreviation": "WENTW"
+                        },
+                        "room": "214"
+                    },
+                    "monday": false,
+                    "tuesday": false,
+                    "wednesday": true,
+                    "thursday": false,
+                    "friday": false,
+                    "saturday": false,
+                    "sunday": false
+                },
+                {
+                    "begin_time": "10:00",
+                    "end_time": "11:45",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "location": {
+                        "building": {
+                            "name": "Wentworth Hall",
+                            "abbreviation": "WENTW"
+                        },
+                        "room": "214"
+                    },
+                    "monday": false,
+                    "tuesday": false,
+                    "wednesday": false,
+                    "thursday": false,
+                    "friday": true,
+                    "saturday": false,
+                    "sunday": false
+                }
+            ]
+        },
         {
             "title": "Computer Science I",
             "course_number": 1000,
@@ -9,23 +67,48 @@
                 "season": "fall",
                 "year": 2025
             },
+            "professor": {
+                "first_name": "Micah",
+                "last_name": "Schuster",
+                "email": "schusterm@wit.edu"
+            },
             "meeting_times": [
                 {
-                    "begin_time": "14:00",
-                    "end_time": "15:15",
-                    "start_date": "2025-09-02T00:00:00.000Z",
-                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "begin_time": "08:00",
+                    "end_time": "09:15",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
                     "location": {
                         "building": {
                             "name": "Wentworth Hall",
                             "abbreviation": "WENTW"
                         },
-                        "room": "312"
+                        "room": "306"
+                    },
+                    "monday": true,
+                    "tuesday": false,
+                    "wednesday": false,
+                    "thursday": false,
+                    "friday": false,
+                    "saturday": false,
+                    "sunday": false
+                },
+                {
+                    "begin_time": "08:00",
+                    "end_time": "09:15",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "location": {
+                        "building": {
+                            "name": "Wentworth Hall",
+                            "abbreviation": "WENTW"
+                        },
+                        "room": "306"
                     },
                     "monday": false,
-                    "tuesday": true,
-                    "wednesday": false,
-                    "thursday": true,
+                    "tuesday": false,
+                    "wednesday": true,
+                    "thursday": false,
                     "friday": false,
                     "saturday": false,
                     "sunday": false
@@ -41,24 +124,29 @@
                 "season": "fall",
                 "year": 2025
             },
+            "professor": {
+                "first_name": "Micah",
+                "last_name": "Schuster",
+                "email": "schusterm@wit.edu"
+            },
             "meeting_times": [
                 {
-                    "begin_time": "13:00",
-                    "end_time": "14:45",
-                    "start_date": "2025-09-02T00:00:00.000Z",
-                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "begin_time": "08:00",
+                    "end_time": "09:45",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
                     "location": {
                         "building": {
                             "name": "Wentworth Hall",
                             "abbreviation": "WENTW"
                         },
-                        "room": "306"
+                        "room": "207"
                     },
                     "monday": false,
                     "tuesday": false,
                     "wednesday": false,
-                    "thursday": false,
-                    "friday": true,
+                    "thursday": true,
+                    "friday": false,
                     "saturday": false,
                     "sunday": false
                 }
@@ -73,21 +161,46 @@
                 "season": "fall",
                 "year": 2025
             },
+            "professor": {
+                "first_name": "Divya",
+                "last_name": "Nair",
+                "email": "naird2@wit.edu"
+            },
             "meeting_times": [
                 {
-                    "begin_time": "08:00",
-                    "end_time": "09:45",
-                    "start_date": "2025-09-02T00:00:00.000Z",
-                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "begin_time": "15:00",
+                    "end_time": "16:45",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
                     "location": {
                         "building": {
-                            "name": "Dobbs Hall",
-                            "abbreviation": "DOBBS"
+                            "name": "Rubenstein Hall",
+                            "abbreviation": "RBSTN"
                         },
-                        "room": "307"
+                        "room": "105"
+                    },
+                    "monday": true,
+                    "tuesday": false,
+                    "wednesday": false,
+                    "thursday": false,
+                    "friday": false,
+                    "saturday": false,
+                    "sunday": false
+                },
+                {
+                    "begin_time": "15:00",
+                    "end_time": "16:45",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "location": {
+                        "building": {
+                            "name": "Rubenstein Hall",
+                            "abbreviation": "RBSTN"
+                        },
+                        "room": "105"
                     },
                     "monday": false,
-                    "tuesday": true,
+                    "tuesday": false,
                     "wednesday": false,
                     "thursday": true,
                     "friday": false,
@@ -97,29 +210,91 @@
             ]
         },
         {
-            "title": "Discrete Mathematics",
-            "course_number": 2300,
+            "title": "Foundations Of Calculus",
+            "course_number": 1525,
             "schedule_type": "lecture",
             "term": {
                 "uid": 202610,
                 "season": "fall",
                 "year": 2025
             },
+            "professor": {
+                "first_name": "Mark",
+                "last_name": "Mixer",
+                "email": "mixerm@wit.edu"
+            },
             "meeting_times": [
                 {
-                    "begin_time": "10:00",
-                    "end_time": "11:45",
-                    "start_date": "2025-09-02T00:00:00.000Z",
-                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "begin_time": "12:30",
+                    "end_time": "13:45",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
                     "location": {
                         "building": {
                             "name": "Beatty Hall",
                             "abbreviation": "BEATT"
                         },
-                        "room": "421"
+                        "room": "402"
+                    },
+                    "monday": true,
+                    "tuesday": false,
+                    "wednesday": false,
+                    "thursday": false,
+                    "friday": false,
+                    "saturday": false,
+                    "sunday": false
+                },
+                {
+                    "begin_time": "12:30",
+                    "end_time": "13:45",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "location": {
+                        "building": {
+                            "name": "Beatty Hall",
+                            "abbreviation": "BEATT"
+                        },
+                        "room": "402"
                     },
                     "monday": false,
-                    "tuesday": true,
+                    "tuesday": false,
+                    "wednesday": true,
+                    "thursday": false,
+                    "friday": false,
+                    "saturday": false,
+                    "sunday": false
+                }
+            ]
+        },
+        {
+            "title": "Foundations Of Calculus - Lab",
+            "course_number": 1525,
+            "schedule_type": "laboratory",
+            "term": {
+                "uid": 202610,
+                "season": "fall",
+                "year": 2025
+            },
+            "professor": {
+                "first_name": "Mark",
+                "last_name": "Mixer",
+                "email": "mixerm@wit.edu"
+            },
+            "meeting_times": [
+                {
+                    "begin_time": "13:00",
+                    "end_time": "14:45",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "location": {
+                        "building": {
+                            "name": "Beatty Hall",
+                            "abbreviation": "BEATT"
+                        },
+                        "room": "402"
+                    },
+                    "monday": false,
+                    "tuesday": false,
                     "wednesday": false,
                     "thursday": true,
                     "friday": false,
@@ -129,64 +304,37 @@
             ]
         },
         {
-            "title": "Calculus 1A",
-            "course_number": 1776,
-            "schedule_type": "lecture",
+            "title": "Seminar In Foundations Of Calc",
+            "course_number": 3800,
+            "schedule_type": "laboratory",
             "term": {
                 "uid": 202610,
                 "season": "fall",
                 "year": 2025
             },
-            "meeting_times": [
-                {
-                    "begin_time": "09:30",
-                    "end_time": "10:40",
-                    "start_date": "2025-09-02T00:00:00.000Z",
-                    "end_date": "2025-10-15T23:59:59.000Z",
-                    "location": {
-                        "building": {
-                            "name": "Watson Hall",
-                            "abbreviation": "WATSN"
-                        },
-                        "room": "006"
-                    },
-                    "monday": true,
-                    "tuesday": false,
-                    "wednesday": true,
-                    "thursday": false,
-                    "friday": true,
-                    "saturday": false,
-                    "sunday": false
-                }
-            ]
-        },
-        {
-            "title": "Calculus 1B",
-            "course_number": 1777,
-            "schedule_type": "lecture",
-            "term": {
-                "uid": 202610,
-                "season": "fall",
-                "year": 2025
+            "professor": {
+                "first_name": "Everett",
+                "last_name": "Meike",
+                "email": "meikee@wit.edu"
             },
             "meeting_times": [
                 {
-                    "begin_time": "09:30",
-                    "end_time": "10:40",
-                    "start_date": "2025-10-15T00:00:00.000Z",
-                    "end_date": "2025-12-11T23:59:59.000Z",
+                    "begin_time": "08:00",
+                    "end_time": "09:45",
+                    "start_date": "2025-09-02T00:00:00.000-04:00",
+                    "end_date": "2025-12-11T23:59:59.000-05:00",
                     "location": {
                         "building": {
-                            "name": "Watson Hall",
-                            "abbreviation": "WATSN"
+                            "name": "Beatty Hall",
+                            "abbreviation": "BEATT"
                         },
-                        "room": "006"
+                        "room": "402"
                     },
-                    "monday": true,
-                    "tuesday": false,
-                    "wednesday": true,
+                    "monday": false,
+                    "tuesday": true,
+                    "wednesday": false,
                     "thursday": false,
-                    "friday": true,
+                    "friday": false,
                     "saturday": false,
                     "sunday": false
                 }
