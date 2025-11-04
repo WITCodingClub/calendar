@@ -107,7 +107,7 @@
                 throw new Error(data.message || 'Server is (probably) down! Please email mayonej@wit.edu!');
             }
 
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
             goto('/onboard');
         } catch (err) {
             error = 'Server is (probably) down! Please email mayonej@wit.edu!';

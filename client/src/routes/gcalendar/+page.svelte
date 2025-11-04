@@ -53,7 +53,7 @@
             const screenHeight = window.screen.availHeight;
 
             //@ts-expect-error
-            const win = await chrome.windows.create({
+            await chrome.windows.create({
                 url: data.oauth_url,
                 width: 650,
                 height: 800,
@@ -61,10 +61,6 @@
                 top: Math.floor((screenHeight - 800) / 2),
                 type: 'popup'
             });
-
-            if (win) {
-                win.focus();
-            }
         }
     }
 
