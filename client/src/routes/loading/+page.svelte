@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { LoadingIndicator, Button } from 'm3-svelte';
+    import { handleApiResponse } from '$lib/api';
 
     let schoolEmail = $state('');
     let error = $state<string | null>(null);
@@ -94,23 +95,22 @@
                 }
             });
 
-            const data = await response.json();
+            const data = await handleApiResponse<{ jwt?: string; message?: string }>(response);
 
-            if (response.ok) {
-                if (data.jwt) {
-                    //@ts-expect-error
-                    await chrome.storage.local.set({
-                        jwt_token: data.jwt,
-                    });
-                }
-            } else {
-                throw new Error(data.message || 'Server is (probably) down! Please email mayonej@wit.edu!');
+            if (data.jwt) {
+                //@ts-expect-error
+                await chrome.storage.local.set({
+                    jwt_token: data.jwt,
+                });
             }
 
             await new Promise(resolve => setTimeout(resolve, 3000));
             goto('/onboard');
         } catch (err) {
-            error = 'Server is (probably) down! Please email mayonej@wit.edu!';
+            // Only show error if it's not a beta access error (which redirects)
+            if (err instanceof Error && err.message !== 'Beta access required') {
+                error = 'Server is (probably) down! Please email mayonej@wit.edu!';
+            }
         }
     }
 </script>

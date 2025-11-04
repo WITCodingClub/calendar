@@ -2,6 +2,7 @@
     import { TextFieldOutlined, Button } from 'm3-svelte';
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
+    import { handleApiResponse } from '$lib/api';
     
     let emailToSignInWith: string | null = $state(null);
     let emailToSubmit = $state('');
@@ -35,20 +36,22 @@
     }
 
     async function submitEmail() {
-        const emailToUse = emailToSignInWith || emailToSubmit;
-        
-        //@ts-expect-error
-        const jwt_token = await chrome.storage.local.get('jwt_token');
-        const response = await fetch('https://heron-selected-literally.ngrok-free.app/api/user/gcal', {
-            method: 'POST',
-            body: JSON.stringify({email: emailToUse}),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${jwt_token.jwt_token}`
-            }
-        });
-        const data = await response.json();
-        if (response.ok) {
+        try {
+            const emailToUse = emailToSignInWith || emailToSubmit;
+
+            //@ts-expect-error
+            const jwt_token = await chrome.storage.local.get('jwt_token');
+            const response = await fetch('https://heron-selected-literally.ngrok-free.app/api/user/gcal', {
+                method: 'POST',
+                body: JSON.stringify({email: emailToUse}),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwt_token.jwt_token}`
+                }
+            });
+
+            const data = await handleApiResponse<{ oauth_url: string }>(response);
+
             const screenWidth = window.screen.availWidth;
             const screenHeight = window.screen.availHeight;
 
@@ -64,6 +67,11 @@
 
             if (win) {
                 win.focus();
+            }
+        } catch (err) {
+            // Beta access error will redirect automatically
+            if (err instanceof Error && err.message !== 'Beta access required') {
+                console.error('Error submitting email:', err);
             }
         }
     }

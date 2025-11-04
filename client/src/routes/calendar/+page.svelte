@@ -3,6 +3,7 @@
     import type { MeetingTime } from '$lib/types/MeetingTime';
     import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
     import { fade, scale, slide } from 'svelte/transition';
+    import { handleApiResponse } from '$lib/api';
 
     let data: any = $state(null);
     let jwt_token: string | null = $state(null);
@@ -177,7 +178,7 @@
             }
         });
 
-        const response = await newData.json();
+        const response = await handleApiResponse<{ classes: Course[] }>(newData);
         processedData = response.classes;
 
         if (shouldCloseTab && tabToUse.id) {
