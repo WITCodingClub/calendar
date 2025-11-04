@@ -1,9 +1,9 @@
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && 
       tab.url && 
-      tab.url.includes('/magic_link/verify')) {
+      tab.url.includes('heron-selected-literally.ngrok-free.app/oauth/success')) {
     
-    console.log('Magic link verification page detected');
+    console.log('OAuth success page detected');
     
     try {
       const results = await chrome.scripting.executeScript({
@@ -16,15 +16,14 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         
         if (token && user) {
           await chrome.storage.local.set({
-            jwt_token: token,
-            user: user
+            oauth_status: 'success',
           });
           
           console.log('Authentication successful!');
           
           setTimeout(() => {
             chrome.tabs.remove(tabId);
-          }, 2000);
+          }, 1000);
         }
       }
     } catch (error) {

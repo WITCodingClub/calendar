@@ -1,11 +1,9 @@
 <script lang="ts">
     import { Button } from 'm3-svelte';
-    import { goto } from '$app/navigation';
-    import { onMount } from 'svelte';
-    
+    import { goto } from '$app/navigation';    
     
     async function selectGoogleCalendar() {
-        goto('/calendar');
+        goto('/gcalendar');
     }
 
     async function selectAllOtherCalendars() {
