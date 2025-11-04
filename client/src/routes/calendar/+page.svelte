@@ -39,6 +39,12 @@
         sunday: boolean;
     }
 
+    interface Professor {
+        first_name: string;
+        last_name: string;
+        email: string;
+    }
+
     interface Term {
         uid: number;
         season: string;
@@ -288,6 +294,12 @@
                                 <div class="flex flex-col gap-1">
                                     <span class="text-sm font-medium text-on-surface-variant">Schedule Type</span>
                                     <span class="text-sm">{capitalizeFirstLetter(course.schedule_type)}</span>
+                                </div>
+
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-medium text-on-surface-variant">Professor</span>
+                                    <span class="text-sm">{capitalizeFirstLetter(course.professor.first_name)} {capitalizeFirstLetter(course.professor.last_name)}</span>
+                                <span class="text-sm text-on-surface-variant"><a href={`mailto:${course.professor.email}`} class="text-primary">{course.professor.email}</a></span>
                                 </div>
 
                                 <div class="flex flex-col gap-1">
