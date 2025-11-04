@@ -1,12 +1,67 @@
 <script lang="ts">
     import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
     import { fade, scale, slide } from 'svelte/transition';
-    import type { MeetingTime } from '$lib/types/MeetingTime';
-    import type { Term } from '$lib/types/Term';
-    import type { Professor } from '$lib/types/Professor';
-    import type { Location } from '$lib/types/Location';
-    import type { Building } from '$lib/types/Building';
-	import type { Course } from '$lib/types/Course';
+    import { goto } from '$app/navigation';
+
+    // todo: use this!
+    interface ResponseData {
+        ics_url: string;
+        classes: Course[];
+    }
+
+    interface Building {
+        name: string;
+        abbreviation: string;
+    }
+
+    interface Professor {
+        first_name: string;
+        last_name: string;
+        email: string;
+        rmp_id?: string;
+    }
+
+    interface Location {
+        building: Building;
+        room: string;
+    }
+
+    interface MeetingTime {
+        begin_time: string;
+        end_time: string;
+        start_date: string;
+        end_date: string;
+        location: Location;
+        monday: boolean;
+        tuesday: boolean;
+        wednesday: boolean;
+        thursday: boolean;
+        friday: boolean;
+        saturday: boolean;
+        sunday: boolean;
+    }
+
+    interface Professor {
+        first_name: string;
+        last_name: string;
+        email: string;
+        rmp_id?: string;
+    }
+
+    interface Term {
+        uid: number;
+        season: string;
+        year: number;
+    }
+
+    interface Course {
+        title: string;
+        course_number: number;
+        schedule_type: string;
+        term: Term;
+        professor: Professor;
+        meeting_times: MeetingTime[];
+    }
 
     let data: any = $state(null);
     let jwt_token: string | null = $state(null);
@@ -246,7 +301,16 @@
 
                                 <div class="flex flex-col gap-1">
                                     <span class="text-sm font-medium text-on-surface-variant">Professor</span>
-                                    <span class="text-sm">{capitalizeFirstLetter(course.professor.first_name)} {capitalizeFirstLetter(course.professor.last_name)}</span>
+                                    {#if course.professor.rmp_id}
+                                        <button
+                                            class="text-sm text-primary hover:underline cursor-pointer text-left"
+                                            onclick={() => goto(`/professor/${course.professor.rmp_id}`)}
+                                        >
+                                            {capitalizeFirstLetter(course.professor.first_name)} {capitalizeFirstLetter(course.professor.last_name)}
+                                        </button>
+                                    {:else}
+                                        <span class="text-sm">{capitalizeFirstLetter(course.professor.first_name)} {capitalizeFirstLetter(course.professor.last_name)}</span>
+                                    {/if}
                                 <span class="text-sm text-on-surface-variant"><a href={`mailto:${course.professor.email}`} class="text-primary">{course.professor.email}</a></span>
                                 </div>
 

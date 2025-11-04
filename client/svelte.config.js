@@ -14,9 +14,9 @@ const config = {
 			// these options are set automatically — see below
 			pages: 'extension',
 			assets: 'extension',
-			fallback: undefined,
+			fallback: 'index.html',
 			precompress: false,
-			strict: true
+			strict: false
 		}),
 		output: {
 			bundleStrategy: 'single'
