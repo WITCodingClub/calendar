@@ -1,64 +1,8 @@
 <script lang="ts">
+    import { type Course } from '$lib/types';
+    import type { MeetingTime } from '$lib/types/MeetingTime';
     import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
     import { fade, scale, slide } from 'svelte/transition';
-
-    // todo: use this!
-    interface ResponseData {
-        ics_url: string;
-        classes: Course[];
-    }
-
-    interface Building {
-        name: string;
-        abbreviation: string;
-    }
-
-    interface Professor {
-        first_name: string;
-        last_name: string;
-        email: string;
-    }
-
-    interface Location {
-        building: Building;
-        room: string;
-    }
-
-    interface MeetingTime {
-        begin_time: string;
-        end_time: string;
-        start_date: string;
-        end_date: string;
-        location: Location;
-        monday: boolean;
-        tuesday: boolean;
-        wednesday: boolean;
-        thursday: boolean;
-        friday: boolean;
-        saturday: boolean;
-        sunday: boolean;
-    }
-
-    interface Professor {
-        first_name: string;
-        last_name: string;
-        email: string;
-    }
-
-    interface Term {
-        uid: number;
-        season: string;
-        year: number;
-    }
-
-    interface Course {
-        title: string;
-        course_number: number;
-        schedule_type: string;
-        term: Term;
-        professor: Professor;
-        meeting_times: MeetingTime[];
-    }
 
     let data: any = $state(null);
     let jwt_token: string | null = $state(null);
@@ -191,7 +135,7 @@
                 await chrome.scripting.executeScript({
                     target: { tabId: tabToUse.id },
                     func: () => {
-                        return document.readyState === 'complete' && 
+                        return document.readyState === 'complete' &&
                                typeof fetch !== 'undefined' &&
                                document.body !== null;
                     }
