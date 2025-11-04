@@ -317,7 +317,7 @@
                                                     </span>
                                                     <span class="text-sm text-on-surface-variant">
                                                         {day ? day.label : ''}
-                                                        • {meeting.begin_time} - {meeting.end_time}
+                                                        • {convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}
                                                     </span>
                                                 </div>
                                             {/each}
@@ -375,7 +375,7 @@
                                                     onclick={() => {activeCourse = course}}
                                                 >
                                                     <div class="font-medium truncate">{course.title}</div>
-                                                    <div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-80">{meeting.begin_time} - {meeting.end_time}</div>
+                                                    <div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>
                                                     <div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-70 text-[10px]">{meeting.location.building.abbreviation} {meeting.location.room}</div>
                                                 </button>
                                             {/if}
