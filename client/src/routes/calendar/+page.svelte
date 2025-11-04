@@ -2,9 +2,21 @@
     import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
     import { fade, scale, slide } from 'svelte/transition';
 
+    // todo: use this!
+    interface ResponseData {
+        ics_url: string;
+        classes: Course[];
+    }
+
     interface Building {
         name: string;
         abbreviation: string;
+    }
+
+    interface Professor {
+        first_name: string;
+        last_name: string;
+        email: string;
     }
 
     interface Location {
@@ -171,6 +183,22 @@
                 //@ts-expect-error
                 chrome.tabs.onUpdated.addListener(listener);
             });
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            try {
+                //@ts-expect-error
+                await chrome.scripting.executeScript({
+                    target: { tabId: tabToUse.id },
+                    func: () => {
+                        return document.readyState === 'complete' && 
+                               typeof fetch !== 'undefined' &&
+                               document.body !== null;
+                    }
+                });
+            } catch (e) {
+                console.error('Page readiness check failed:', e);
+            }
         }
 
         if (!tabToUse.id) return;
