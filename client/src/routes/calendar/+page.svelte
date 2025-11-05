@@ -1,6 +1,6 @@
 <script lang="ts">
     import { type Course } from '$lib/types';
-    import type { MeetingTime } from '$lib/types/MeetingTime';
+    import type { MeetingTime } from '$lib/types';
     import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
     import { fade, scale, slide } from 'svelte/transition';
 
