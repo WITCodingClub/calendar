@@ -1,14 +1,18 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
+    import { processedData as storedProcessedData } from '$lib/store';
     import type { Course, MeetingTime, ResponseData } from '$lib/types';
-    import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
+    import { Button, LoadingIndicator, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
+    import { onMount } from 'svelte';
     import { fade, scale, slide } from 'svelte/transition';
-    import { handleApiResponse } from '$lib/api';
 
-    let data: ResponseData | undefined = $state(undefined);
+    let responseData: ResponseData | undefined = $state(undefined);
+    let data: any | undefined = $state(undefined);
     let jwt_token: string | undefined = $state(undefined);
     let processedData: Course[] | undefined = $state(undefined);
     let expandedCourses = $state(new Set<number>());
     let activeCourse: Course | undefined = $state(undefined);
+    let loading = $state(false);
 
     function toggleCourse(index: number) {
         const newSet = new Set(expandedCourses);
@@ -97,7 +101,21 @@
         return latestHour;
     }
 
+    async function copyIcsToClipboard() {
+        if (!responseData?.ics_url) {
+            console.error('No ICS URL available');
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(responseData.ics_url);
+        } catch (error) {
+            console.error('Failed to copy ICS URL to clipboard:', error);
+        }
+    }
+
     async function fetchFromCurrentPage() {
+        loading = true;
         const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
 
         const [currentTab] = await chrome.tabs.query({
@@ -123,7 +141,7 @@
                 chrome.tabs.onUpdated.addListener(listener);
             });
 
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             try {
                 await chrome.scripting.executeScript({
@@ -135,6 +153,7 @@
                     }
                 });
             } catch (e) {
+                loading = false;
                 console.error('Page readiness check failed:', e);
             }
         }
@@ -151,6 +170,7 @@
 					});
 					return await r.json();
 				} catch (e) {
+                    loading = false;
 					return ({ error: (e as Error).message });
 				}
             }
@@ -160,6 +180,7 @@
         jwt_token = result.jwt_token;
         if (!jwt_token) {
             console.error('No JWT token found');
+            loading = false;
             return;
         }
 
@@ -174,12 +195,16 @@
             }
         });
 
-        const response = await handleApiResponse<{ classes: Course[] }>(newData);
+        const response = await newData.json();
+        responseData = response;
         processedData = response.classes;
+
+        storedProcessedData.set(response || undefined);
 
         if (shouldCloseTab && tabToUse.id) {
             await chrome.tabs.remove(tabToUse.id);
         }
+        loading = false;
     }
 
     let tab = $state("b");
@@ -187,12 +212,55 @@
     let notiTime = $state("30");
     let notiTimeType = $state("minutes");
     let courseColor = $state("#d50000");
+
+    onMount(() => {
+        if ($storedProcessedData !== undefined) {
+            responseData = $storedProcessedData;
+            processedData = $storedProcessedData.classes;
+        }
+    });
 </script>
 
 <div class="flex flex-col gap-4 justify-center items-center h-full mt-10 w-full px-3">
     {#if !processedData}
-        <Button variant="filled" square onclick={fetchFromCurrentPage}>Fetch Data</Button>
+        <div class="w-full flex flex-col items-center gap-6 p-6 bg-surface-container-lowest rounded-md shadow-md border border-outline-variant max-w-lg mx-auto">
+            <div class="flex flex-col gap-1 items-center">
+                <h1 class="text-xl font-bold text-primary text-center mb-1">Get Your Calendar</h1>
+                <p class="text-md text-secondary text-center">
+                    Click the button below to fetch your classes and generate your calendar.
+                    If you've linked your Google Calendar, your events will be added there as well!
+                </p>
+            </div>
+            <div class="flex flex-col items-center peak gap-2">
+                {#if loading}
+                    <LoadingIndicator size={44} />
+                {:else}
+                    <Button
+                        variant="filled"
+                        square
+                        onclick={fetchFromCurrentPage}
+                    >
+                    <span class="flex flex-row gap-2 items-center">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" fill="#FFF3"/><path d="M8 2v4M16 2v4M3 10h18" stroke="currentColor" stroke-linecap="round"/><circle cx="7.5" cy="15.5" r="1.25" fill="currentColor"/><circle cx="12" cy="15.5" r="1.25" fill="currentColor"/><circle cx="16.5" cy="15.5" r="1.25" fill="currentColor"/></svg>
+                        Get Calendar
+                    </span>
+                </Button>
+                {/if}
+            </div>
+        </div>
     {:else}
+        <div>
+            <div class="flex flex-col gap-1 items-center">
+                <h1 class="text-xl font-bold text-primary text-center mb-1">Your Calendar</h1>
+                <p class="text-md text-secondary text-center">
+                    Copy the link below and add it to your calendar app.
+                </p>
+                <div class="flex flex-row gap-2 items-center">
+                    <Button variant="outlined" square onclick={copyIcsToClipboard}>Copy Calendar Link</Button>
+                    <Button variant="text" onclick={() => {goto('/how-to-add')}}>How to add?</Button>
+                </div>
+            </div>
+        </div>
         <Tabs secondary={true}
             items={[
                 { name: "Calendar View", value: "b" },
@@ -396,5 +464,9 @@
 <style>
     :global(.stuff-moment div.m3-container) {
         min-width: 7rem !important;
+    }
+
+    :global(.peak button) {
+        height: 2.5rem !important;
     }
 </style>
