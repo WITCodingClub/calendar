@@ -24,6 +24,14 @@
         expandedCourses = newSet;
     }
 
+    async function checkBetaAccess() {
+        const beta_access = await chrome.storage.local.get('beta_access');
+        if (beta_access && (beta_access.beta_access === 'false' || beta_access.beta_access === false)) {
+            goto('/beta-access-denied/');
+            return Promise.reject(new Error('Beta access denied')) as never;
+        }
+    }
+
     function capitalizeFirstLetter(val: string) {
         return val.charAt(0).toUpperCase() + val.slice(1);
     }
@@ -214,6 +222,7 @@
     let courseColor = $state("#d50000");
 
     onMount(() => {
+        checkBetaAccess();
         if ($storedProcessedData !== undefined) {
             responseData = $storedProcessedData;
             processedData = $storedProcessedData.classes;

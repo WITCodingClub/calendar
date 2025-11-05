@@ -1,25 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { Button } from 'm3-svelte';
-	import { onMount } from 'svelte';
 
 	let isRetrying = false;
-	let returnPath = '/calendar'; // Default to calendar page
-
-	onMount(() => {
-		// Get the path to return to after granting access
-		const storedPath = sessionStorage.getItem('beta_access_return_path');
-		if (storedPath) {
-			returnPath = storedPath;
-		}
-	});
 
 	async function handleRetry() {
 		isRetrying = true;
-		// Clear the stored path
-		sessionStorage.removeItem('beta_access_return_path');
-		// Go back to the original page to retry the operation
-		await goto(returnPath);
+		chrome.storage.local.remove('beta_access');
+		await goto('/loading');
 	}
 
 </script>

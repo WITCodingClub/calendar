@@ -2,7 +2,6 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { LoadingIndicator, Button } from 'm3-svelte';
-    import { handleApiResponse } from '$lib/api';
 
     let schoolEmail = $state('');
     let error = $state<string | null>(null);
@@ -88,7 +87,13 @@
                 }
             });
 
-            const data = await handleApiResponse<{ jwt?: string; message?: string }>(response);
+            const data = await response.json() as { jwt?: string; message?: string; error?: string; beta_access?: boolean };
+
+            if (data && data.beta_access === false) {
+                await chrome.storage.local.set({ beta_access: false });
+                goto('/beta-access-denied/');
+                return Promise.reject(new Error('Beta access denied')) as never;
+            }
 
             if (response.ok) {
                 if (data.jwt) {

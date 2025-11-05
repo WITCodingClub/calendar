@@ -2,7 +2,6 @@
     import { TextFieldOutlined, Button } from 'm3-svelte';
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
-    import { handleApiResponse } from '$lib/api';
     
     let emailToSignInWith: string | null = $state(null);
     let emailToSubmit = $state('');
@@ -11,6 +10,14 @@
         const oauth_email = await chrome.storage.local.get('oauth_email');
         if (oauth_email.oauth_email !== undefined && oauth_email.oauth_email !== '') {
             goto('/calendar');
+        }
+    }
+
+    async function checkBetaAccess() {
+        const beta_access = await chrome.storage.local.get('beta_access');
+        if (beta_access && (beta_access.beta_access === 'false' || beta_access.beta_access === false)) {
+            goto('/beta-access-denied/');
+            return Promise.reject(new Error('Beta access denied')) as never;
         }
     }
 
@@ -76,6 +83,7 @@
     }
 
     onMount(() => {
+        checkBetaAccess();
         checkGcalStatus();
         tryForEmail();
         setupListener();
