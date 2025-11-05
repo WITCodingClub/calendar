@@ -1,24 +1,20 @@
-# WIT-Calendar
+<h3 align="center">
+    <strong>WIT-Calendar</strong>
+</h3>
 
-## Broad Idea/Scope
-Generate a calendar invite/import classes into the user's calendar (including end date, frequency, etc)
+<p align="center">
+    <a href="#">website</a> · <a href="#">install</a>
+</p>
 
-## Getting the data
-Chrome Extension to nab the data
+<p align="center">
+    WIT-Calendar is a chrome extension that makes adding your classes to your calendar easy & quick! In the future you can also find "best times" to meet with fellow students, easily register for classes, and more!
+</p>
 
-("private" data taken only from here: https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=)
+## How does it work?
+The chrome extension gets your schedule, processes it, and then provides you with a calendar link. You can also optionally connect your Google account for automatic updates to your Google Calendar.
 
-All other data can be gathered via *public* APIs.
+You can also manage event alerts, colors, and titles from within the extension.
 
-## Creating the Calendar
-There's two main ways to do this, we can at least do #1, but ideally both.
-
-1. Generate an ICS file. Compatible with basically all calendars - Only issue is that it's slightly annoying to import to most Calendars outside of an email
-2. Google Calendar API, directly add the events - This would allow a more direct google integration, but is obviously only for google calendar
-
-On top of this, we need a server to host the calendar URL (and for updating).
-
-## Other
-Ideally the site/chrome extension for this will be built in Svelte/Typescript. Why? Because it's simple & efficient.
-
-Allow for generating an ICS per class/only importing specific classes?
+## Development
+- See instructions for developing up the extension [here](https://github.com/WITCodingClub/calendar/blob/main/client/README.md).
+- See instructions for developing up the backend [here](https://github.com/jaspermayone/witcc-calendar-backend/blob/main/README.md).

@@ -1,9 +1,9 @@
 # WIT-Calendar (client)
 
-## Building
-Run ``npm run build`` to build the extension. 
-
-Built files will be in ``/client/extension/``
+## Setup
+1. Install [npm/node.js](https://nodejs.org/en/download)
+3. Run ``npm i`` in this directory (``/client``)
+4. Run ``npm run build`` to build the extension. Built files will be in ``/client/extension/``
 
 ## Testing the Extension
 
