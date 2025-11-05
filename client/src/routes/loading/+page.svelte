@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { LoadingIndicator, Button } from 'm3-svelte';
+    import { handleApiResponse } from '$lib/api';
 
     let schoolEmail = $state('');
     let error = $state<string | null>(null);
@@ -87,7 +88,7 @@
                 }
             });
 
-            const data = await response.json();
+            const data = await handleApiResponse<{ jwt?: string; message?: string }>(response);
 
             if (response.ok) {
                 if (data.jwt) {

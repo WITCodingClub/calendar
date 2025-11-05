@@ -2,6 +2,7 @@
     import { TextFieldOutlined, Button } from 'm3-svelte';
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
+    import { handleApiResponse } from '$lib/api';
     
     let emailToSignInWith: string | null = $state(null);
     let emailToSubmit = $state('');
