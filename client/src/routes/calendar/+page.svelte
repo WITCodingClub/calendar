@@ -1,14 +1,13 @@
 <script lang="ts">
-    import { type Course } from '$lib/types';
-    import type { MeetingTime } from '$lib/types';
+    import type { Course, MeetingTime, ResponseData } from '$lib/types';
     import { Button, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
     import { fade, scale, slide } from 'svelte/transition';
 
-    let data: any = $state(null);
-    let jwt_token: string | null = $state(null);
-    let processedData: Course[] | null = $state(null);
+    let data: ResponseData | undefined = $state(undefined);
+    let jwt_token: string | undefined = $state(undefined);
+    let processedData: Course[] | undefined = $state(undefined);
     let expandedCourses = $state(new Set<number>());
-    let activeCourse: Course | null = $state(null);
+    let activeCourse: Course | undefined = $state(undefined);
 
     function toggleCourse(index: number) {
         const newSet = new Set(expandedCourses);
@@ -54,7 +53,7 @@
 
         for (const meeting of course.meeting_times) {
             for (const day of dayOrder) {
-                if (meeting[day.key as keyof MeetingTime]) {
+                if (meeting[day.key as keyof typeof meeting]) {
                     if (day.order < earliestDay || (day.order === earliestDay && meeting.begin_time < earliestTime)) {
                         earliestDay = day.order;
                         earliestTime = meeting.begin_time;
@@ -100,7 +99,6 @@
     async function fetchFromCurrentPage() {
         const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
 
-        //@ts-expect-error
         const [currentTab] = await chrome.tabs.query({
             active: true,
             currentWindow: true
@@ -111,29 +109,24 @@
         let shouldCloseTab = false;
 
         if (!isOnTargetPage) {
-            //@ts-expect-error
             tabToUse = await chrome.tabs.create({ url: targetUrl });
             shouldCloseTab = true;
 
             await new Promise<void>((resolve) => {
-                //@ts-expect-error
-                const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+                const listener = (tabId: number, changeInfo: any) => {
                     if (tabId === tabToUse.id && changeInfo.status === 'complete') {
-                        //@ts-expect-error
                         chrome.tabs.onUpdated.removeListener(listener);
                         resolve();
                     }
                 };
-                //@ts-expect-error
                 chrome.tabs.onUpdated.addListener(listener);
             });
 
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             try {
-                //@ts-expect-error
                 await chrome.scripting.executeScript({
-                    target: { tabId: tabToUse.id },
+                    target: { tabId: tabToUse.id! },
                     func: () => {
                         return document.readyState === 'complete' &&
                                typeof fetch !== 'undefined' &&
@@ -147,18 +140,21 @@
 
         if (!tabToUse.id) return;
 
-        //@ts-expect-error
         const results = await chrome.scripting.executeScript({
             target: { tabId: tabToUse.id },
             world: 'MAIN',
-            func: () => {
-                return fetch('https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=', {
-                credentials: 'include'
-                }).then(r => r.json()).catch(e => ({ error: e.message }));
+            func: async () => {
+                try {
+					const r = await fetch('https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=', {
+						credentials: 'include'
+					});
+					return await r.json();
+				} catch (e) {
+					return ({ error: (e as Error).message });
+				}
             }
         });
 
-        //@ts-expect-error
         const result = await chrome.storage.local.get('jwt_token');
         jwt_token = result.jwt_token;
         if (!jwt_token) {
@@ -181,7 +177,6 @@
         processedData = response.classes;
 
         if (shouldCloseTab && tabToUse.id) {
-            //@ts-expect-error
             await chrome.tabs.remove(tabToUse.id);
         }
     }
@@ -299,7 +294,7 @@
                                 </div>
 
                                 <div class="relative flex-1 flex">
-                                    {#each Array(numHours) as _, i}
+                                    {#each Array(numHours) as _}
                                         <div class="w-32 border-r border-outline-variant"></div>
                                     {/each}
 
@@ -342,8 +337,8 @@
         class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
         role="button"
         tabindex="-1"
-        onclick={() => activeCourse = null}
-        onkeydown={(e) => e.key === 'Escape' && (activeCourse = null)}
+        onclick={() => activeCourse = undefined}
+        onkeydown={(e) => e.key === 'Escape' && (activeCourse = undefined)}
     >
         <div
             transition:scale={{ duration: 200, start: 0.95 }}

@@ -1,7 +1,19 @@
 <script lang="ts">
     import { Button } from 'm3-svelte';
-    import { goto } from '$app/navigation';    
-    
+    import { goto } from '$app/navigation'; 
+    import { onMount } from 'svelte';
+
+    async function checkGcalStatus() {
+        const oauth_email = await chrome.storage.local.get('oauth_email');
+        if (oauth_email.oauth_email !== undefined && oauth_email.oauth_email !== '') {
+            goto('/calendar');
+        }
+    }
+
+    onMount(() => {
+        checkGcalStatus();
+    });
+
     async function selectGoogleCalendar() {
         goto('/gcalendar');
     }

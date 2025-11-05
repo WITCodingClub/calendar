@@ -15,7 +15,6 @@
             error = null;
             const targetUrl = 'https://selfservice.wit.edu/BannerGeneralSsb/ssb/PersonalInformationDetails/getEmails';
             
-            //@ts-expect-error
             const [currentTab] = await chrome.tabs.query({ 
                 active: true, 
                 currentWindow: true 
@@ -26,20 +25,16 @@
             let shouldCloseTab = false;
             
             if (!isOnTargetPage) {
-                //@ts-expect-error
                 tabToUse = await chrome.tabs.create({ url: targetUrl });
                 shouldCloseTab = true;
                 
                 await new Promise<void>((resolve) => {
-                    //@ts-expect-error
-                    const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+                    const listener = (tabId: number, changeInfo: any) => {
                         if (tabId === tabToUse.id && changeInfo.status === 'complete') {
-                            //@ts-expect-error
                             chrome.tabs.onUpdated.removeListener(listener);
                             resolve();
                         }
-                    };
-                    //@ts-expect-error
+                    }
                     chrome.tabs.onUpdated.addListener(listener);
                 });
             }
@@ -48,7 +43,6 @@
                 throw new Error('Failed to get tab ID');
             }
             
-            //@ts-expect-error
             const results = await chrome.scripting.executeScript({
                 target: { tabId: tabToUse.id },
                 world: 'MAIN',
@@ -74,7 +68,6 @@
             }
 
             if (shouldCloseTab && tabToUse.id) {
-                //@ts-expect-error
                 await chrome.tabs.remove(tabToUse.id);
             }
 
@@ -98,7 +91,6 @@
 
             if (response.ok) {
                 if (data.jwt) {
-                    //@ts-expect-error
                     await chrome.storage.local.set({
                         jwt_token: data.jwt,
                     });
