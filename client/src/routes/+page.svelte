@@ -8,7 +8,6 @@
     });
 
     async function checkIfLoggedIn() {
-        //@ts-expect-error
         const result = await chrome.storage.local.get('jwt_token');
         if (result.jwt_token) {
             goto('/onboard');

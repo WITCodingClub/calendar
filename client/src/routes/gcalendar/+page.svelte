@@ -7,8 +7,14 @@
     let emailToSignInWith: string | null = $state(null);
     let emailToSubmit = $state('');
 
+    async function checkGcalStatus() {
+        const oauth_email = await chrome.storage.local.get('oauth_email');
+        if (oauth_email.oauth_email !== undefined && oauth_email.oauth_email !== '') {
+            goto('/calendar');
+        }
+    }
+
     async function tryForEmail() {
-        //@ts-expect-error
         const info = await chrome.identity.getProfileUserInfo();
         if (info && info.email) {
             emailToSignInWith = info.email;
@@ -16,12 +22,10 @@
     }
 
     async function setupListener() {
-        //@ts-expect-error
         chrome.storage.onChanged.addListener((changes: any) => {
             //@ts-expect-error
             Object.entries(changes).forEach(async ([key, { newValue }]) => {
                 if (key === 'oauth_status' && newValue === 'success') {
-                    //@ts-expect-error
                     await chrome.storage.local.set({
                         oauth_email: emailToSignInWith || emailToSubmit,
                     });
@@ -36,27 +40,23 @@
     }
 
     async function submitEmail() {
-        try {
-            const emailToUse = emailToSignInWith || emailToSubmit;
-
-            //@ts-expect-error
-            const jwt_token = await chrome.storage.local.get('jwt_token');
-            const response = await fetch('https://heron-selected-literally.ngrok-free.app/api/user/gcal', {
-                method: 'POST',
-                body: JSON.stringify({email: emailToUse}),
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${jwt_token.jwt_token}`
-                }
-            });
-
-            const data = await handleApiResponse<{ oauth_url: string }>(response);
-
+        const emailToUse = emailToSignInWith || emailToSubmit; 
+        
+        const jwt_token = await chrome.storage.local.get('jwt_token');
+        const response = await fetch('https://heron-selected-literally.ngrok-free.app/api/user/gcal', {
+            method: 'POST',
+            body: JSON.stringify({email: emailToUse}),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${jwt_token.jwt_token}`
+            }
+        });
+        const data = await response.json();
+        if (response.ok && data.oauth_url) {
             const screenWidth = window.screen.availWidth;
             const screenHeight = window.screen.availHeight;
 
-            //@ts-expect-error
-            const win = await chrome.windows.create({
+            await chrome.windows.create({
                 url: data.oauth_url,
                 width: 650,
                 height: 800,
@@ -64,19 +64,19 @@
                 top: Math.floor((screenHeight - 800) / 2),
                 type: 'popup'
             });
-
-            if (win) {
-                win.focus();
-            }
-        } catch (err) {
-            // Beta access error will redirect automatically
-            if (err instanceof Error && err.message !== 'Beta access required') {
-                console.error('Error submitting email:', err);
-            }
+        } else if (response.ok && !data.oauth_url) {
+            await chrome.storage.local.set({
+                    oauth_status: 'success',
+            });
+            await chrome.storage.local.set({
+                oauth_email: emailToSignInWith || emailToSubmit,
+            });
+            goto('/calendar');
         }
     }
 
     onMount(() => {
+        checkGcalStatus();
         tryForEmail();
         setupListener();
     });

@@ -16,7 +16,6 @@
             error = null;
             const targetUrl = 'https://selfservice.wit.edu/BannerGeneralSsb/ssb/PersonalInformationDetails/getEmails';
             
-            //@ts-expect-error
             const [currentTab] = await chrome.tabs.query({ 
                 active: true, 
                 currentWindow: true 
@@ -27,20 +26,16 @@
             let shouldCloseTab = false;
             
             if (!isOnTargetPage) {
-                //@ts-expect-error
                 tabToUse = await chrome.tabs.create({ url: targetUrl });
                 shouldCloseTab = true;
                 
                 await new Promise<void>((resolve) => {
-                    //@ts-expect-error
-                    const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+                    const listener = (tabId: number, changeInfo: any) => {
                         if (tabId === tabToUse.id && changeInfo.status === 'complete') {
-                            //@ts-expect-error
                             chrome.tabs.onUpdated.removeListener(listener);
                             resolve();
                         }
-                    };
-                    //@ts-expect-error
+                    }
                     chrome.tabs.onUpdated.addListener(listener);
                 });
             }
@@ -49,7 +44,6 @@
                 throw new Error('Failed to get tab ID');
             }
             
-            //@ts-expect-error
             const results = await chrome.scripting.executeScript({
                 target: { tabId: tabToUse.id },
                 world: 'MAIN',
@@ -75,13 +69,12 @@
             }
 
             if (shouldCloseTab && tabToUse.id) {
-                //@ts-expect-error
                 await chrome.tabs.remove(tabToUse.id);
             }
 
             signIn();
         } catch (err) {
-            error = 'Sign in failed!';
+            error = 'Failed to fetch data! Make';
         }
     }
 
@@ -97,20 +90,20 @@
 
             const data = await handleApiResponse<{ jwt?: string; message?: string }>(response);
 
-            if (data.jwt) {
-                //@ts-expect-error
-                await chrome.storage.local.set({
-                    jwt_token: data.jwt,
-                });
+            if (response.ok) {
+                if (data.jwt) {
+                    await chrome.storage.local.set({
+                        jwt_token: data.jwt,
+                    });
+                }
+            } else {
+                throw new Error(data.message || 'Server is (probably) down! Please email mayonej@wit.edu!');
             }
 
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
             goto('/onboard');
         } catch (err) {
-            // Only show error if it's not a beta access error (which redirects)
-            if (err instanceof Error && err.message !== 'Beta access required') {
-                error = 'Server is (probably) down! Please email mayonej@wit.edu!';
-            }
+            error = 'Server is (probably) down! Please email mayonej@wit.edu! Also, make';
         }
     }
 </script>
@@ -119,7 +112,7 @@
     <div class=" rounded-lg shadow-md p-8 flex flex-col items-center peak bg-surface-container-high">
         {#if error}
             <h1 class="text-3xl font-extrabold text-center text-error mb-4">Failed to sign in!</h1>
-            <p class="text-center text-error-container mb-4 break">{error} Also, make sure you're logged in to <a class="text-primary underline" href="https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory" target="_blank">WIT Self Service</a>.</p>
+            <p class="text-center text-error-container mb-4 break">{error} sure you're logged in to <a class="text-primary underline" href="https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory" target="_blank">WIT Self Service</a>.</p>
             <Button variant="outlined" onclick={fetchSchoolEmail}>Try Again</Button>
         {:else}
             <h1 class="text-3xl font-extrabold text-center text-primary mb-6">Signing in!</h1>
