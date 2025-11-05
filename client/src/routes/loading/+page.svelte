@@ -87,7 +87,13 @@
                 }
             });
 
-            const data = await response.json();
+            const data = await response.json() as { jwt?: string; message?: string; error?: string; beta_access?: boolean };
+
+            if (data && data.beta_access === false) {
+                await chrome.storage.local.set({ beta_access: false });
+                goto('/beta-access-denied/');
+                return Promise.reject(new Error('Beta access denied')) as never;
+            }
 
             if (response.ok) {
                 if (data.jwt) {

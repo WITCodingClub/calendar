@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { Course, MeetingTime, ResponseData } from '$lib/types';
-    import { Button, SelectOutlined, Tabs, TextFieldOutlined, LoadingIndicator } from 'm3-svelte';
-    import { fade, scale, slide } from 'svelte/transition';
-    import { processedData as storedProcessedData } from '$lib/store';
-    import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
+    import { processedData as storedProcessedData } from '$lib/store';
+    import type { Course, MeetingTime, ResponseData } from '$lib/types';
+    import { Button, LoadingIndicator, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
+    import { onMount } from 'svelte';
+    import { fade, scale, slide } from 'svelte/transition';
 
     let responseData: ResponseData | undefined = $state(undefined);
     let data: any | undefined = $state(undefined);
@@ -22,6 +22,14 @@
             newSet.add(index);
         }
         expandedCourses = newSet;
+    }
+
+    async function checkBetaAccess() {
+        const beta_access = await chrome.storage.local.get('beta_access');
+        if (beta_access && (beta_access.beta_access === 'false' || beta_access.beta_access === false)) {
+            goto('/beta-access-denied/');
+            return Promise.reject(new Error('Beta access denied')) as never;
+        }
     }
 
     function capitalizeFirstLetter(val: string) {
@@ -214,6 +222,7 @@
     let courseColor = $state("#d50000");
 
     onMount(() => {
+        checkBetaAccess();
         if ($storedProcessedData !== undefined) {
             responseData = $storedProcessedData;
             processedData = $storedProcessedData.classes;

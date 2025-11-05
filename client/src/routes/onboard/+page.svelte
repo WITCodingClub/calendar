@@ -10,7 +10,16 @@
         }
     }
 
+    async function checkBetaAccess() {
+        const beta_access = await chrome.storage.local.get('beta_access');
+        if (beta_access && (beta_access.beta_access === 'false' || beta_access.beta_access === false)) {
+            goto('/beta-access-denied/');
+            return Promise.reject(new Error('Beta access denied')) as never;
+        }
+    }
+
     onMount(() => {
+        checkBetaAccess();
         checkGcalStatus();
     });
 
