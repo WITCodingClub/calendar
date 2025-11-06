@@ -259,6 +259,8 @@
         checkBetaAccess();
         jwt_token = await API.getJwtToken();
         terms = await API.getTerms();
+        userSettings = await API.userSettings();
+		storedUserSettings.set(userSettings);
     });
 
     $effect(() => {
