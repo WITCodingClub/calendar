@@ -114,11 +114,11 @@
 </script>
 
 <div class="flex flex-col items-center justify-center min-h-screen w-full px-4">
-    <div class=" rounded-lg shadow-md p-8 flex flex-col items-center peak bg-surface-container-high">
+    <div class=" rounded-lg shadow-md p-8 flex flex-col items-center peak {error ? 'bg-error' : 'bg-surface-container-high'}">
         {#if error}
-            <h1 class="text-3xl font-extrabold text-center text-error mb-4">Failed to sign in!</h1>
-            <p class="text-center text-error-container mb-4 break">{error} sure you're logged in to <a class="text-primary underline" href="https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory" target="_blank">WIT Self Service</a>.</p>
-            <Button variant="outlined" onclick={fetchSchoolEmail}>Try Again</Button>
+            <h1 class="text-3xl font-extrabold text-center text-on-error mb-4">Failed to sign in!</h1>
+            <p class="text-center text-error-container mb-4 break">{error} sure you're logged in to <a class="text-on-error underline" href="https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory" target="_blank">WIT Self Service</a>.</p>
+            <Button variant="elevated" square onclick={fetchSchoolEmail}>Try Again</Button>
         {:else}
             <h1 class="text-3xl font-extrabold text-center text-primary mb-6">Signing in!</h1>
             <LoadingIndicator size={64} />
