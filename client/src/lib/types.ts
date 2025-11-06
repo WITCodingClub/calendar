@@ -39,7 +39,6 @@ interface Professor {
     rmp_id?: string;
 }
 
-// todo: use this!
 interface ResponseData {
     ics_url: string;
     classes: Course[];
@@ -51,6 +50,12 @@ interface Term {
     year: number;
 }
 
+interface UserSettings {
+    military_time: boolean;
+    default_color_lecture: string;
+    default_color_lab: string;
+}
+
 export {
   type Building,
   type Course,
@@ -58,5 +63,6 @@ export {
   type MeetingTime,
   type Professor,
   type ResponseData,
-  type Term
+  type Term,
+  type UserSettings
 };
