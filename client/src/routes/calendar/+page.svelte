@@ -189,7 +189,7 @@
 
         data = results[0]?.result ?? [];
 
-        const newData = await fetch("https://heron-selected-literally.ngrok-free.app/api/process_courses", {
+        const newData = await fetch(`${API.baseUrl}/process_courses`, {
             method: 'POST',
             body: JSON.stringify(data),
             headers: {

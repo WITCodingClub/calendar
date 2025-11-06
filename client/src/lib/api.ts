@@ -1,5 +1,5 @@
 export class API {
-    private static baseUrl = 'https://heron-selected-literally.ngrok-free.app/api';
+    public static readonly baseUrl = 'https://heron-selected-literally.ngrok-free.app/api';
 
     public static async getJwtToken() {
         const result = await chrome.storage.local.get('jwt_token');

@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { LoadingIndicator, Button } from 'm3-svelte';
+    import { API } from '$lib/api';
 
     let schoolEmail = $state('');
     let error = $state<string | null>(null);
@@ -79,7 +80,7 @@
 
     async function signIn() {
         try {
-            const response = await fetch('https://heron-selected-literally.ngrok-free.app/api/user/onboard', {
+            const response = await fetch(`${API.baseUrl}/user/onboard`, {
                 method: 'POST',
                 body: JSON.stringify({email: schoolEmail}),
                 headers: {

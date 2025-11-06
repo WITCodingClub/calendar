@@ -51,7 +51,7 @@
     async function submitEmail() {
         const emailToUse = emailToSignInWith || emailToSubmit; 
         
-        const response = await fetch('https://heron-selected-literally.ngrok-free.app/api/user/gcal', {
+        const response = await fetch(`${API.baseUrl}/user/gcal`, {
             method: 'POST',
             body: JSON.stringify({email: emailToUse}),
             headers: {
