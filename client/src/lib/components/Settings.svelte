@@ -5,6 +5,8 @@
     import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { userSettings as storedUserSettings } from "$lib/store";
+    import { isOtherCalendar as storedIsOtherCalendar } from "$lib/store";
+    import { processedData as storedProcessedData } from "$lib/store";
 
     let userSettings = $state<UserSettings | undefined>(undefined);
     let email = $state<string | undefined>(undefined);
@@ -49,6 +51,9 @@
         await chrome.storage.local.clear();
         localStorage.clear();
         sessionStorage.clear();
+        storedUserSettings.set(undefined);
+        storedIsOtherCalendar.set(false);
+        storedProcessedData.set([]);
         await goto('/');
     }
 </script>
