@@ -2,11 +2,12 @@
     import { goto } from '$app/navigation';
     import { processedData as storedProcessedData } from '$lib/store';
     import type { Course, MeetingTime, ResponseData, TermResponse } from '$lib/types';
-    import { Button, LoadingIndicator, SelectOutlined, Tabs, TextFieldOutlined, ConnectedButtons } from 'm3-svelte';
+    import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons } from 'm3-svelte';
     import { onMount } from 'svelte';
     import { fade, scale, slide } from 'svelte/transition';
     import { API } from '$lib/api';
     import Settings from '$lib/components/Settings.svelte';
+    import Help from '$lib/components/Help.svelte';
 
     let responseData: ResponseData | undefined = $state(undefined);
     let data: any | undefined = $state(undefined);
@@ -271,18 +272,20 @@
                 </p>
                 <div class="flex flex-row gap-2 items-center">
                     <Button variant="outlined" square onclick={copyIcsToClipboard}>Copy Calendar Link</Button>
-                    <Button variant="text" onclick={() => {goto('/how-to-add')}}>How to add?</Button>
                 </div>
             </div>
         </div>
-        <Tabs secondary={true}
-            items={[
-                { name: "Calendar View", value: "b" },
-                { name: "List View", value: "a" },
-                { name: "Settings", value: "settings" },    
-            ]}
-            bind:tab
-        />
+        <div class="not-peak">
+            <VariableTabs secondary={true}
+                items={[
+                    { name: "Calendar View", value: "b" },
+                    { name: "List View", value: "a" },
+                    { name: "Settings", value: "settings" }, 
+                    { name: "Help", value: "help" },
+                ]}
+                bind:tab
+            />
+        </div>
         <hr class="w-full border-outline-variant" />
         {#if tab == "a" || tab == "b"}
             <ConnectedButtons>
@@ -423,6 +426,8 @@
         {/if}
         {:else if tab === "settings"}
             <Settings />
+        {:else if tab === "help"}
+            <Help />
     {/if}
 </div>
 
@@ -495,4 +500,5 @@
     :global(.peak button) {
         height: 2.5rem !important;
     }
+
 </style>
