@@ -6,6 +6,7 @@
     import { onMount } from 'svelte';
     import { fade, scale, slide } from 'svelte/transition';
     import { API } from '$lib/api';
+    import Settings from '$lib/components/Settings.svelte';
 
     let responseData: ResponseData | undefined = $state(undefined);
     let data: any | undefined = $state(undefined);
@@ -278,16 +279,19 @@
             items={[
                 { name: "Calendar View", value: "b" },
                 { name: "List View", value: "a" },
+                { name: "Settings", value: "settings" },    
             ]}
             bind:tab
         />
         <hr class="w-full border-outline-variant" />
-        <ConnectedButtons>
-            <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id} />
-            <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
-            <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id} />
-            <Button for="seg-b" variant="filled">{terms?.next_term.name}</Button>
-        </ConnectedButtons>
+        {#if tab == "a" || tab == "b"}
+            <ConnectedButtons>
+                <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id} />
+                <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
+                <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id} />
+                <Button for="seg-b" variant="filled">{terms?.next_term.name}</Button>
+            </ConnectedButtons>
+        {/if}
     {/if}
 
     {#if tab === "a"}
@@ -417,6 +421,8 @@
                 </div>
             </div>
         {/if}
+        {:else if tab === "settings"}
+            <Settings />
     {/if}
 </div>
 
