@@ -79,4 +79,11 @@ export class API {
         });
         return response.json();
     }
+
+    public static settings = () => ({
+        military_time: async () => await this.getUserSettings().then(settings => settings.military_time),
+        default_color_lecture: async () => await this.getUserSettings().then(settings => settings.default_color_lecture),
+        default_color_lab: async () => await this.getUserSettings().then(settings => settings.default_color_lab),
+    });
+
 }

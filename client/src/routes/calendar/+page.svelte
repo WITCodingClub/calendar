@@ -17,6 +17,7 @@
     let activeCourse: Course | undefined = $state(undefined);
     let loading = $state(false);
     let terms = $state<TermResponse | undefined>(undefined);
+    let militaryTime = $state(true);
 
     function toggleCourse(index: number) {
         const newSet = new Set(expandedCourses);
@@ -40,28 +41,20 @@
         return val.charAt(0).toUpperCase() + val.slice(1);
     }
 
-    function convertTo12Hour(time24: string): string {
-        const [hours, minutes] = time24.split(':').map(Number);
-        const period = hours >= 12 ? 'PM' : 'AM';
-        const hours12 = hours % 12 || 12;
-        return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
-    }
+	function convertTo12Hour(time24: string): string {
+		if (militaryTime) return time24;
+		const [hours, minutes] = time24.split(':').map(Number);
+		const period = hours >= 12 ? 'PM' : 'AM';
+		const hours12 = hours % 12 || 12;
+		return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+	}
 
-    function convertTo24Hour(time12: string): string {
-        const match = time12.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-        if (!match) return time12;
-        
-        let [, hours, minutes, period] = match;
-        let hours24 = parseInt(hours);
-        
-        if (period.toUpperCase() === 'PM' && hours24 !== 12) {
-            hours24 += 12;
-        } else if (period.toUpperCase() === 'AM' && hours24 === 12) {
-            hours24 = 0;
-        }
-        
-        return `${hours24.toString().padStart(2, '0')}:${minutes}`;
-    }
+	function formatHourLabel(hour: number): string {
+		if (militaryTime) return `${hour.toString().padStart(2, '0')}:00`;
+		const period = hour >= 12 ? 'PM' : 'AM';
+		const h12 = (hour % 12) || 12;
+		return `${h12}:00 ${period}`;
+	}
 
     const dayOrder = [
         { key: 'monday', label: 'Monday', abbr: 'M', order: 0 },
@@ -256,6 +249,7 @@
             processedData = $storedProcessedData.classes;
         }
         terms = await API.getTerms();
+		militaryTime = await API.settings().military_time();
     });
 </script>
 
@@ -376,7 +370,7 @@
                                                     </span>
                                                     <span class="text-sm text-on-surface-variant">
                                                         {day ? day.label : ''}
-                                                        • {meeting.begin_time} - {meeting.end_time}
+														• {convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}
                                                     </span>
                                                 </div>
                                             {/each}
@@ -401,7 +395,7 @@
                             {#each Array(numHours) as _, i}
                                 {@const hour = i + 8}
                                 <div class="w-32 border-r border-outline-variant flex items-center justify-center py-2">
-                                    <span class="text-xs text-on-surface-variant">{hour > 12 ? hour - 12 : hour}:00 {hour >= 12 ? 'PM' : 'AM'}</span>
+									<span class="text-xs text-on-surface-variant">{formatHourLabel(hour)}</span>
                                 </div>
                             {/each}
                         </div>
@@ -434,7 +428,7 @@
                                                     onclick={() => {activeCourse = course}}
                                                 >
                                                     <div class="font-medium truncate">{course.title}</div>
-                                                    <div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-80">{meeting.begin_time} - {meeting.end_time}</div>
+													<div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>
                                                     <div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-70 text-[10px]">{meeting.location.building.abbreviation} {meeting.location.room}</div>
                                                 </button>
                                             {/if}
