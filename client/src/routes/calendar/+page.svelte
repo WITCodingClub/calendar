@@ -22,8 +22,8 @@
 	let attemptedTerms = $state(new Set<string>());
 	let userChangedTerm = $state(false);
     let militaryTime = $derived($storedUserSettings?.military_time ?? true);
-    let lectureColor = $derived($storedUserSettings?.default_color_lecture);
-    let labColor = $derived($storedUserSettings?.default_color_lab);
+    let lectureColor = $derived($storedUserSettings?.default_color_lecture ?? "#5484ed");
+    let labColor = $derived($storedUserSettings?.default_color_lab ?? "#ffb878");
 
     function toggleCourse(index: number) {
         const newSet = new Set(expandedCourses);
