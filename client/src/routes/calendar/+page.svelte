@@ -1,10 +1,11 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { processedData as storedProcessedData } from '$lib/store';
-    import type { Course, MeetingTime, ResponseData } from '$lib/types';
-    import { Button, LoadingIndicator, SelectOutlined, Tabs, TextFieldOutlined } from 'm3-svelte';
+    import type { Course, MeetingTime, ResponseData, TermResponse } from '$lib/types';
+    import { Button, LoadingIndicator, SelectOutlined, Tabs, TextFieldOutlined, ConnectedButtons } from 'm3-svelte';
     import { onMount } from 'svelte';
     import { fade, scale, slide } from 'svelte/transition';
+    import { API } from '$lib/api';
 
     let responseData: ResponseData | undefined = $state(undefined);
     let data: any | undefined = $state(undefined);
@@ -13,6 +14,7 @@
     let expandedCourses = $state(new Set<number>());
     let activeCourse: Course | undefined = $state(undefined);
     let loading = $state(false);
+    let terms = $state<TermResponse | undefined>(undefined);
 
     function toggleCourse(index: number) {
         const newSet = new Set(expandedCourses);
@@ -185,14 +187,6 @@
             }
         });
 
-        const result = await chrome.storage.local.get('jwt_token');
-        jwt_token = result.jwt_token;
-        if (!jwt_token) {
-            console.error('No JWT token found');
-            loading = false;
-            return;
-        }
-
         data = results[0]?.result ?? [];
 
         const newData = await fetch("https://heron-selected-literally.ngrok-free.app/api/process_courses", {
@@ -221,21 +215,26 @@
     }
 
     let tab = $state("b");
+    let selected = $derived(terms?.current_term.id ?? terms?.next_term.id ?? undefined);
 
     let notiTime = $state("30");
     let notiTimeType = $state("minutes");
     let courseColor = $state("#d50000");
 
-    onMount(() => {
+    
+
+    onMount(async () => {
         checkBetaAccess();
+        jwt_token = await API.getJwtToken();
         if ($storedProcessedData !== undefined) {
             responseData = $storedProcessedData;
             processedData = $storedProcessedData.classes;
         }
+        terms = await API.getTerms();
     });
 </script>
 
-<div class="flex flex-col gap-4 justify-center items-center h-full mt-10 w-full px-3">
+<div class="flex flex-col gap-4 justify-center items-center h-full mt-4 w-full px-3">
     {#if !processedData}
         <div class="w-full flex flex-col items-center gap-6 p-6 bg-surface-container-lowest rounded-md shadow-md border border-outline-variant max-w-lg mx-auto">
             <div class="flex flex-col gap-1 items-center">
@@ -281,7 +280,14 @@
                 { name: "List View", value: "a" },
             ]}
             bind:tab
-    />
+        />
+        <hr class="w-full border-outline-variant" />
+        <ConnectedButtons>
+            <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id} />
+            <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
+            <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id} />
+            <Button for="seg-b" variant="filled">{terms?.next_term.name}</Button>
+        </ConnectedButtons>
     {/if}
 
     {#if tab === "a"}

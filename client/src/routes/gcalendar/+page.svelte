@@ -2,7 +2,9 @@
     import { TextFieldOutlined, Button } from 'm3-svelte';
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
-    
+    import { API } from '$lib/api';
+
+    let jwt_token: string | undefined = $state(undefined);
     let emailToSignInWith: string | null = $state(null);
     let emailToSubmit = $state('');
 
@@ -49,13 +51,12 @@
     async function submitEmail() {
         const emailToUse = emailToSignInWith || emailToSubmit; 
         
-        const jwt_token = await chrome.storage.local.get('jwt_token');
         const response = await fetch('https://heron-selected-literally.ngrok-free.app/api/user/gcal', {
             method: 'POST',
             body: JSON.stringify({email: emailToUse}),
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${jwt_token.jwt_token}`
+                'Authorization': `Bearer ${jwt_token}`
             }
         });
         const data = await response.json();
@@ -82,8 +83,9 @@
         }
     }
 
-    onMount(() => {
+    onMount(async () => {
         checkBetaAccess();
+        jwt_token = await API.getJwtToken();
         checkGcalStatus();
         tryForEmail();
         setupListener();

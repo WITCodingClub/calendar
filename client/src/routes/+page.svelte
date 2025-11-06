@@ -2,14 +2,15 @@
     import { Button } from 'm3-svelte';
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
+    import { API } from '$lib/api';
 
     onMount(() => {
         checkIfLoggedIn();
     });
 
     async function checkIfLoggedIn() {
-        const result = await chrome.storage.local.get('jwt_token');
-        if (result.jwt_token) {
+        const jwt_token = await API.getJwtToken();
+        if (jwt_token) {
             goto('/onboard');
         }
     }

@@ -56,6 +56,21 @@ interface UserSettings {
     default_color_lab: string;
 }
 
+interface CurrentTerm {
+    name: string;
+    id: number;
+}
+
+interface NextTerm {
+    name: string;
+    id: number;
+}
+
+interface TermResponse {
+    current_term: CurrentTerm;
+    next_term: NextTerm;
+}
+
 export {
   type Building,
   type Course,
@@ -64,5 +79,8 @@ export {
   type Professor,
   type ResponseData,
   type Term,
-  type UserSettings
+  type UserSettings,
+  type CurrentTerm,
+  type NextTerm,
+  type TermResponse
 };
