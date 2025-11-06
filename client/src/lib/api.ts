@@ -63,7 +63,8 @@ export class API {
                 'Authorization': `Bearer ${token}`
             }
         });
-        return response.json();
+        const data = await response.json();
+        return data;
     }
 
     public static async updateUserSettings(settings: UserSettings): Promise<UserSettings> {
@@ -77,13 +78,14 @@ export class API {
                 'Content-Type': 'application/json'
             }
         });
-        return response.json();
+        const data = await response.json();
+        return data;
     }
 
     public static settings = () => ({
-        military_time: async () => await this.getUserSettings().then(settings => settings.military_time),
-        default_color_lecture: async () => await this.getUserSettings().then(settings => settings.default_color_lecture),
-        default_color_lab: async () => await this.getUserSettings().then(settings => settings.default_color_lab),
+        military_time: async () => (await this.getUserSettings()).military_time,
+        default_color_lecture: async () => (await this.getUserSettings()).default_color_lecture,
+        default_color_lab: async () => (await this.getUserSettings()).default_color_lab,
     });
 
 }

@@ -5,6 +5,7 @@ interface Building {
 
 interface Course {
     title: string;
+    prefix: string;
     course_number: number;
     schedule_type: string;
     term: Term;

@@ -22,6 +22,11 @@ const config = {
 			bundleStrategy: 'single'
 		}
 	},
+	compilerOptions: {
+		experimental: {
+			async: true
+		}
+	}
 };
 
 export default config;

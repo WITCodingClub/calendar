@@ -8,6 +8,7 @@
     import { API } from '$lib/api';
     import Settings from '$lib/components/Settings.svelte';
     import Help from '$lib/components/Help.svelte';
+    import { userSettings as storedUserSettings } from '$lib/store';
 
     let responseData: ResponseData | undefined = $state(undefined);
     let data: any | undefined = $state(undefined);
@@ -17,7 +18,9 @@
     let activeCourse: Course | undefined = $state(undefined);
     let loading = $state(false);
     let terms = $state<TermResponse | undefined>(undefined);
-    let militaryTime = $state(true);
+    let militaryTime = $derived($storedUserSettings?.military_time ?? true);
+    let lectureColor = $derived($storedUserSettings?.default_color_lecture);
+    let labColor = $derived($storedUserSettings?.default_color_lab);
 
     function toggleCourse(index: number) {
         const newSet = new Set(expandedCourses);
@@ -249,7 +252,6 @@
             processedData = $storedProcessedData.classes;
         }
         terms = await API.getTerms();
-		militaryTime = await API.settings().military_time();
     });
 </script>
 
@@ -349,6 +351,11 @@
                                 </div>
 
                                 <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-medium text-on-surface-variant">Prefix</span>
+                                    <span class="text-sm">{course.prefix}</span>
+                                </div>
+
+                                <div class="flex flex-col gap-1">
                                     <span class="text-sm font-medium text-on-surface-variant">Professor</span>
                                     <span class="text-sm">{capitalizeFirstLetter(course.professor.first_name)} {capitalizeFirstLetter(course.professor.last_name)}</span>
                                 <span class="text-sm text-on-surface-variant"><a href={`mailto:${course.professor.email}`} class="text-primary">{course.professor.email}</a></span>
@@ -421,10 +428,11 @@
                                                 {@const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8}
                                                 {@const width = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) / 60 * 8}
                                                 {@const isLab = course.schedule_type.toLowerCase() === 'laboratory'}
+                                            
 
                                                 <button
-                                                    class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2 {isLab ? 'bg-tertiary-container border-tertiary' : 'bg-primary-container border-primary'}"
-                                                    style="left: {startOffset}rem; width: {width}rem;"
+                                                    class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
+                                                    style="background-color: {isLab ? labColor : lectureColor}; left: {startOffset}rem; width: {width}rem; border-color: {isLab ? labColor : lectureColor};"
                                                     onclick={() => {activeCourse = course}}
                                                 >
                                                     <div class="font-medium truncate">{course.title}</div>
