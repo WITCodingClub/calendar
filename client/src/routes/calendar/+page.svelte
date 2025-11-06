@@ -247,7 +247,7 @@
         }
     }
 
-    let tab = $state("b");
+    let tab = $state("a");
 
     let notiTime = $state("30");
     let notiTimeType = $state("minutes");
@@ -322,8 +322,7 @@
         <div class="not-peak">
             <VariableTabs secondary={true}
                 items={[
-                    { name: "Calendar View", value: "b" },
-                    { name: "List View", value: "a" },
+                    { name: "Calendar View", value: "a" },
                     { name: "Settings", value: "settings" }, 
                     { name: "Help", value: "help" },
                 ]}
@@ -331,7 +330,7 @@
             />
         </div>
         <hr class="w-full border-outline-variant" />
-        {#if tab == "a" || tab == "b"}
+        {#if tab == "a"}
             <ConnectedButtons>
                 <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id?.toString()} onchange={() => userChangedTerm = true} />
                 <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
@@ -342,80 +341,6 @@
     {/if}
 
     {#if tab === "a"}
-        {#if processedData}
-            {#each sortCoursesBySchedule(processedData) as course, index}
-                <div class="flex flex-col w-full rounded-md bg-surface-container-low overflow-hidden">
-                    <div class="flex flex-row justify-between items-center w-full p-4 gap-4">
-                        <h1 class="text-md font-bold flex-1 min-w-0">
-                            {course.title}
-                        </h1>
-                        <div class="shrink-0">
-                            <Button
-                                variant="tonal"
-                                square
-                                onclick={() => toggleCourse(index)}
-                            >
-                                <span style="display: inline-block; transition: transform 0.3s ease; transform: rotate({expandedCourses.has(index) ? '180deg' : '0deg'})">
-                                    ↓
-                                </span>
-                            </Button>
-                        </div>
-                    </div>
-
-                    {#if expandedCourses.has(index)}
-                        <div transition:slide={{ duration: 300 }} class="px-4 pb-4">
-                            <div class="flex flex-col gap-3 pt-2 border-t border-outline-variant">
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-medium text-on-surface-variant">Course Number</span>
-                                    <span class="text-sm">{course.course_number}</span>
-                                </div>
-
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-medium text-on-surface-variant">Schedule Type</span>
-                                    <span class="text-sm">{capitalizeFirstLetter(course.schedule_type)}</span>
-                                </div>
-
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-medium text-on-surface-variant">Prefix</span>
-                                    <span class="text-sm">{course.prefix}</span>
-                                </div>
-
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-medium text-on-surface-variant">Professor</span>
-                                    <span class="text-sm">{capitalizeFirstLetter(course.professor.first_name)} {capitalizeFirstLetter(course.professor.last_name)}</span>
-                                <span class="text-sm text-on-surface-variant"><a href={`mailto:${course.professor.email}`} class="text-primary">{course.professor.email}</a></span>
-                                </div>
-
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-medium text-on-surface-variant">Term</span>
-                                    <span class="text-sm">{capitalizeFirstLetter(course.term.season)} {course.term.year}</span>
-                                </div>
-
-                                {#if course.meeting_times && course.meeting_times.length > 0}
-                                    <div class="flex flex-col gap-2">
-                                        <span class="text-sm font-medium text-on-surface-variant">Meeting Times</span>
-                                        {#each course.meeting_times as meetingTime}
-                                            {#each splitMeetingByDays(meetingTime) as { meeting, day }}
-                                                <div class="flex flex-col gap-1 pl-2 border-l-2 border-primary">
-                                                    <span class="text-sm">
-                                                        {meeting.location.building.name} {meeting.location.room}
-                                                    </span>
-                                                    <span class="text-sm text-on-surface-variant">
-                                                        {day ? day.label : ''}
-														• {convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}
-                                                    </span>
-                                                </div>
-                                            {/each}
-                                        {/each}
-                                    </div>
-                                {/if}
-                            </div>
-                        </div>
-                    {/if}
-                </div>
-            {/each}
-        {/if}
-    {:else if tab === "b"}
         {#if processedData}
             {@const latestHour = getLatestEndHour(processedData)}
             {@const numHours = latestHour - 8 + 1}
@@ -481,7 +406,7 @@
     {/if}
 </div>
 
-{#if activeCourse && tab === "b"}
+{#if activeCourse && tab === "a"}
     <div
         transition:fade={{ duration: 200 }}
         class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
