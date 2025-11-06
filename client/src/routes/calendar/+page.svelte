@@ -10,14 +10,17 @@
     import Help from '$lib/components/Help.svelte';
     import { userSettings as storedUserSettings } from '$lib/store';
 
-    let responseData: ResponseData | undefined = $state(undefined);
+	let selected: string | undefined = $state(undefined);
+	let responseData: ResponseData | undefined = $derived($storedProcessedData.find((d) => String(d.termId) === selected)?.responseData);
     let data: any | undefined = $state(undefined);
     let jwt_token: string | undefined = $state(undefined);
-    let processedData: Course[] | undefined = $state(undefined);
+	let processedData: Course[] | undefined = $derived(responseData?.classes);
     let expandedCourses = $state(new Set<number>());
     let activeCourse: Course | undefined = $state(undefined);
     let loading = $state(false);
     let terms = $state<TermResponse | undefined>(undefined);
+	let attemptedTerms = $state(new Set<string>());
+	let userChangedTerm = $state(false);
     let militaryTime = $derived($storedUserSettings?.military_time ?? true);
     let lectureColor = $derived($storedUserSettings?.default_color_lecture);
     let labColor = $derived($storedUserSettings?.default_color_lab);
@@ -145,7 +148,8 @@
         }
     }
 
-    async function fetchFromCurrentPage() {
+    async function fetchFromCurrentPage(term: string | undefined) {
+        if (!term) return;
         try {
         loading = true;
         const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
@@ -195,17 +199,21 @@
         const results = await chrome.scripting.executeScript({
             target: { tabId: tabToUse.id },
             world: 'MAIN',
-            func: async () => {
+            func: async (termId: string) => {
                 try {
-					const r = await fetch('https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=', {
+                    const r0 = await fetch(`https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/reset?term=${termId}`, {
+                        credentials: 'include'
+                    });
+                    await r0.json();
+					const r1 = await fetch('https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=', {
 						credentials: 'include'
 					});
-					return await r.json();
+					return await r1.json();
 				} catch (e) {
-                    loading = false;
 					return ({ error: (e as Error).message });
 				}
-            }
+            },
+            args: [term]
         });
 
         data = results[0]?.result ?? [];
@@ -220,10 +228,14 @@
         });
 
         const response = await newData.json();
-        responseData = response;
-        processedData = response.classes;
-
-        storedProcessedData.set(response || undefined);
+        storedProcessedData.update((list) => {
+            const tid = String(term);
+            const i = list.findIndex((x) => String(x.termId) === tid);
+            const next = [...list];
+            if (i >= 0) next[i] = { termId: tid, responseData: response };
+            else next.push({ termId: tid, responseData: response });
+            return next;
+        });
 
         if (shouldCloseTab && tabToUse.id) {
             await chrome.tabs.remove(tabToUse.id);
@@ -236,7 +248,6 @@
     }
 
     let tab = $state("b");
-    let selected = $derived(terms?.current_term.id ?? terms?.next_term.id ?? undefined);
 
     let notiTime = $state("30");
     let notiTimeType = $state("minutes");
@@ -247,11 +258,23 @@
     onMount(async () => {
         checkBetaAccess();
         jwt_token = await API.getJwtToken();
-        if ($storedProcessedData !== undefined) {
-            responseData = $storedProcessedData;
-            processedData = $storedProcessedData.classes;
-        }
         terms = await API.getTerms();
+    });
+
+    $effect(() => {
+        if (terms && !selected) {
+            const initial = terms?.current_term?.id ?? terms?.next_term?.id;
+            selected = initial != null ? String(initial) : undefined;
+        }
+    });
+
+    $effect(() => {
+        if (userChangedTerm && selected && !$storedProcessedData.some((d) => String(d.termId) === selected) && !loading && !attemptedTerms.has(selected)) {
+            const next = new Set(attemptedTerms);
+            next.add(selected);
+            attemptedTerms = next;
+            fetchFromCurrentPage(selected);
+        }
     });
 </script>
 
@@ -272,7 +295,7 @@
                     <Button
                         variant="filled"
                         square
-                        onclick={fetchFromCurrentPage}
+                        onclick={() => fetchFromCurrentPage(selected)}
                     >
                     <span class="flex flex-row gap-2 items-center">
                         <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" fill="#FFF3"/><path d="M8 2v4M16 2v4M3 10h18" stroke="currentColor" stroke-linecap="round"/><circle cx="7.5" cy="15.5" r="1.25" fill="currentColor"/><circle cx="12" cy="15.5" r="1.25" fill="currentColor"/><circle cx="16.5" cy="15.5" r="1.25" fill="currentColor"/></svg>
@@ -308,9 +331,9 @@
         <hr class="w-full border-outline-variant" />
         {#if tab == "a" || tab == "b"}
             <ConnectedButtons>
-                <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id} />
+                <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id?.toString()} onchange={() => userChangedTerm = true} />
                 <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
-                <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id} />
+                <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id?.toString()} onchange={() => userChangedTerm = true} />
                 <Button for="seg-b" variant="filled">{terms?.next_term.name}</Button>
             </ConnectedButtons>
         {/if}

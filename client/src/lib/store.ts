@@ -3,13 +3,23 @@ import type { ResponseData } from './types';
 import type { UserSettings } from './types';
 import { browser } from '$app/environment';
 
-export const processedData = writable<ResponseData | undefined>(undefined);
+const initialProcessedData = (() => {
+	if (!browser) return [];
+	const raw = localStorage.getItem('processedData');
+	if (!raw) return [];
+	try {
+		const parsed = JSON.parse(raw);
+		return Array.isArray(parsed) ? parsed : [];
+	} catch {
+		return [];
+	}
+})();
+
+export const processedData = writable<Array<{ termId: string; responseData: ResponseData }>>(initialProcessedData);
 export const userSettings = writable<UserSettings | undefined>(undefined);
 
 processedData.subscribe((value) => {
-    if (browser) {
-		if (!value) return;
-		if (value === undefined) return;
+	if (browser) {
 		localStorage.setItem('processedData', JSON.stringify(value));
 	}
 });
@@ -22,10 +32,6 @@ userSettings.subscribe((value) => {
 });
 
 if (browser) {
-    const storedData = localStorage.getItem('processedData');
-    if (storedData) {
-        processedData.set(JSON.parse(storedData));
-    }
 	const storedUserSettings = localStorage.getItem('userSettings');
 	if (storedUserSettings) {
 		userSettings.set(JSON.parse(storedUserSettings));
