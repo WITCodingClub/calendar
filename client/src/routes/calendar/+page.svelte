@@ -40,6 +40,29 @@
         return val.charAt(0).toUpperCase() + val.slice(1);
     }
 
+    function convertTo12Hour(time24: string): string {
+        const [hours, minutes] = time24.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const hours12 = hours % 12 || 12;
+        return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    }
+
+    function convertTo24Hour(time12: string): string {
+        const match = time12.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (!match) return time12;
+        
+        let [, hours, minutes, period] = match;
+        let hours24 = parseInt(hours);
+        
+        if (period.toUpperCase() === 'PM' && hours24 !== 12) {
+            hours24 += 12;
+        } else if (period.toUpperCase() === 'AM' && hours24 === 12) {
+            hours24 = 0;
+        }
+        
+        return `${hours24.toString().padStart(2, '0')}:${minutes}`;
+    }
+
     const dayOrder = [
         { key: 'monday', label: 'Monday', abbr: 'M', order: 0 },
         { key: 'tuesday', label: 'Tuesday', abbr: 'T', order: 1 },
