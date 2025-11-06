@@ -6,13 +6,6 @@ html, body {
     padding: 0;
 }
 
-.sidebar-container {
-    max-width: 400px;
-    min-height: 100vh;
-    margin: 0 auto;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
-}
-
 @theme {
     --color-primary: rgb(var(--m3-scheme-primary));
     --color-on-primary: rgb(var(--m3-scheme-on-primary));

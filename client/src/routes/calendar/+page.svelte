@@ -123,6 +123,7 @@
     }
 
     async function fetchFromCurrentPage() {
+        try {
         loading = true;
         const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
 
@@ -212,7 +213,11 @@
         if (shouldCloseTab && tabToUse.id) {
             await chrome.tabs.remove(tabToUse.id);
         }
-        loading = false;
+            loading = false;
+        } catch (e) {
+            console.error('Failed to fetch from current page:', e);
+            loading = false;
+        }
     }
 
     let tab = $state("b");
