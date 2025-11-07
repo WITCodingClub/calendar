@@ -4,3 +4,4 @@
 /.gitmodules @jaspermayone
 
 /client/** @Cattn
+/resources/** @Cattn
