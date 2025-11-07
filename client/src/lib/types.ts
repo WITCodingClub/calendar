@@ -19,6 +19,7 @@ interface Location {
 }
 
 interface MeetingTime {
+    id: number;
     begin_time: string;
     end_time: string;
     start_date: string;
@@ -33,6 +34,10 @@ interface MeetingTime {
     sunday: boolean;
 }
 
+interface isProcessed {
+    processed: boolean;
+}
+
 interface Professor {
     first_name: string;
     last_name: string;
@@ -42,6 +47,10 @@ interface Professor {
 
 interface ResponseData {
     ics_url: string;
+    classes: Course[];
+}
+
+interface ProcessedEvents {
     classes: Course[];
 }
 
@@ -83,5 +92,7 @@ export {
   type UserSettings,
   type CurrentTerm,
   type NextTerm,
-  type TermResponse
+  type TermResponse,
+  type isProcessed,
+  type ProcessedEvents
 };

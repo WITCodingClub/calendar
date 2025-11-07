@@ -17,16 +17,16 @@ const initialProcessedData = (() => {
 
 export const processedData = writable<Array<{ termId: string; responseData: ResponseData }>>(initialProcessedData);
 export const userSettings = writable<UserSettings | undefined>(undefined);
-export const isOtherCalendar = writable<boolean>(false);
+export const icsUrl = writable<string | undefined>(undefined);
 
 if (browser) {
 	const storedUserSettings = localStorage.getItem('userSettings');
 	if (storedUserSettings) {
 		userSettings.set(JSON.parse(storedUserSettings));
 	}
-	const storedIsOtherCalendar = localStorage.getItem('isOtherCalendar');
-	if (storedIsOtherCalendar) {
-		isOtherCalendar.set(JSON.parse(storedIsOtherCalendar));
+	const storedIcsUrl = localStorage.getItem('icsUrl');
+	if (storedIcsUrl) {
+		icsUrl.set(storedIcsUrl);
 	}
 }
 
@@ -43,8 +43,8 @@ userSettings.subscribe((value) => {
 	}
 });
 
-isOtherCalendar.subscribe((value) => {
+icsUrl.subscribe((value) => {
 	if (browser) {
-		localStorage.setItem('isOtherCalendar', JSON.stringify(value));
+		localStorage.setItem('icsUrl', value ?? '');
 	}
 });

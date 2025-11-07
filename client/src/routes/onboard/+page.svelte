@@ -2,7 +2,7 @@
     import { Button } from 'm3-svelte';
     import { goto } from '$app/navigation'; 
     import { onMount } from 'svelte';
-    import { isOtherCalendar as storedIsOtherCalendar } from '$lib/store';
+    import { browser } from '$app/environment';
 
     async function checkGcalStatus() {
         const oauth_email = await chrome.storage.local.get('oauth_email');
@@ -20,8 +20,9 @@
     }
 
     async function checkIsOtherCalendar() {
-        console.log($storedIsOtherCalendar);
-        if ($storedIsOtherCalendar === true) {
+        const stored = browser ? localStorage.getItem('isOtherCalendar') === 'true' : false;
+        console.log(stored);
+        if (stored === true) {
             goto('/calendar');
         }
     }
@@ -37,8 +38,10 @@
     }
 
     async function selectAllOtherCalendars() {
-        storedIsOtherCalendar.set(true);
-        console.log($storedIsOtherCalendar);
+        if (browser) {
+            localStorage.setItem('isOtherCalendar', 'true');
+        }
+        console.log(true);
         goto('/calendar');
     }
 </script>

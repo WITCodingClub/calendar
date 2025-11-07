@@ -1,10 +1,10 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { processedData as storedProcessedData } from '$lib/store';
+    import { processedData as storedProcessedData, icsUrl as storedIcsUrl } from '$lib/store';
     import type { Course, MeetingTime, ResponseData, TermResponse } from '$lib/types';
     import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons } from 'm3-svelte';
     import { onMount } from 'svelte';
-    import { fade, scale, slide } from 'svelte/transition';
+    import { fade, scale } from 'svelte/transition';
     import { API } from '$lib/api';
     import Settings from '$lib/components/Settings.svelte';
     import Help from '$lib/components/Help.svelte';
@@ -12,28 +12,18 @@
 
 	let selected: string | undefined = $state(undefined);
 	let responseData: ResponseData | undefined = $derived($storedProcessedData.find((d) => String(d.termId) === selected)?.responseData);
-    let data: any | undefined = $state(undefined);
     let jwt_token: string | undefined = $state(undefined);
 	let processedData: Course[] | undefined = $derived(responseData?.classes);
-    let expandedCourses = $state(new Set<number>());
     let activeCourse: Course | undefined = $state(undefined);
+    let activeMeeting: MeetingTime | undefined = $state(undefined);
+    type DayItem = { key: keyof MeetingTime; label: string; abbr: string; order: number };
+    let activeDay: DayItem | undefined = $state(undefined);
     let loading = $state(false);
     let terms = $state<TermResponse | undefined>(undefined);
 	let attemptedTerms = $state(new Set<string>());
-	let userChangedTerm = $state(false);
     let militaryTime = $derived($storedUserSettings?.military_time ?? true);
     let lectureColor = $derived($storedUserSettings?.default_color_lecture ?? "#5484ed");
     let labColor = $derived($storedUserSettings?.default_color_lab ?? "#ffb878");
-
-    function toggleCourse(index: number) {
-        const newSet = new Set(expandedCourses);
-        if (newSet.has(index)) {
-            newSet.delete(index);
-        } else {
-            newSet.add(index);
-        }
-        expandedCourses = newSet;
-    }
 
     async function checkBetaAccess() {
         const beta_access = await chrome.storage.local.get('beta_access');
@@ -41,10 +31,6 @@
             goto('/beta-access-denied/');
             return Promise.reject(new Error('Beta access denied')) as never;
         }
-    }
-
-    function capitalizeFirstLetter(val: string) {
-        return val.charAt(0).toUpperCase() + val.slice(1);
     }
 
 	function convertTo12Hour(time24: string): string {
@@ -72,51 +58,6 @@
         { key: 'sunday', label: 'Sunday', abbr: 'Su', order: 6 }
     ];
 
-    function splitMeetingByDays(meeting: MeetingTime) {
-        const activeDays = dayOrder.filter(day => meeting[day.key as keyof MeetingTime]);
-
-        if (activeDays.length <= 1) {
-            return [{ meeting, day: activeDays[0] || null }];
-        }
-
-        return activeDays.map(day => ({ meeting, day }));
-    }
-
-    function getEarliestDayAndTime(course: Course): { dayOrder: number, time: string } {
-        if (!course.meeting_times || course.meeting_times.length === 0) {
-            return { dayOrder: 999, time: "99:99" };
-        }
-
-        let earliestDay = 999;
-        let earliestTime = "99:99";
-
-        for (const meeting of course.meeting_times) {
-            for (const day of dayOrder) {
-                if (meeting[day.key as keyof typeof meeting]) {
-                    if (day.order < earliestDay || (day.order === earliestDay && meeting.begin_time < earliestTime)) {
-                        earliestDay = day.order;
-                        earliestTime = meeting.begin_time;
-                    }
-                }
-            }
-        }
-
-        return { dayOrder: earliestDay, time: earliestTime };
-    }
-
-    function sortCoursesBySchedule(courses: Course[]): Course[] {
-        return [...courses].sort((a, b) => {
-            const aSchedule = getEarliestDayAndTime(a);
-            const bSchedule = getEarliestDayAndTime(b);
-
-            if (aSchedule.dayOrder !== bSchedule.dayOrder) {
-                return aSchedule.dayOrder - bSchedule.dayOrder;
-            }
-
-            return aSchedule.time.localeCompare(bSchedule.time);
-        });
-    }
-
     function getLatestEndHour(courses: Course[]): number {
         let latestHour = 8;
 
@@ -136,113 +77,179 @@
     }
 
     async function copyIcsToClipboard() {
-        if (!responseData?.ics_url) {
+        const icsUrlToCopy = responseData?.ics_url || $storedIcsUrl;
+        if (!icsUrlToCopy) {
             console.error('No ICS URL available');
             return;
         }
 
         try {
-            await navigator.clipboard.writeText(responseData.ics_url);
+            await navigator.clipboard.writeText(icsUrlToCopy);
         } catch (error) {
             console.error('Failed to copy ICS URL to clipboard:', error);
         }
     }
 
-    async function fetchFromCurrentPage(term: string | undefined) {
+    function getMeetingDayLabel(meeting: MeetingTime | undefined): string {
+        if (!meeting) return "Unknown";
+        for (const d of dayOrder) {
+            if (meeting[d.key as keyof MeetingTime]) return d.label;
+        }
+        return "Unknown";
+    }
+
+    async function fetchFromCurrentPage(term: string | undefined): Promise<{ ics_url: string } | undefined> {
         if (!term) return;
-        try {
-        loading = true;
-        const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
-
-        const [currentTab] = await chrome.tabs.query({
-            active: true,
-            currentWindow: true
-        });
-
-        const isOnTargetPage = currentTab.url === targetUrl;
-        let tabToUse = currentTab;
+        let tabToUse: any;
         let shouldCloseTab = false;
+        try {
+            const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
 
-        if (!isOnTargetPage) {
-            tabToUse = await chrome.tabs.create({ url: targetUrl });
-            shouldCloseTab = true;
-
-            await new Promise<void>((resolve) => {
-                const listener = (tabId: number, changeInfo: any) => {
-                    if (tabId === tabToUse.id && changeInfo.status === 'complete') {
-                        chrome.tabs.onUpdated.removeListener(listener);
-                        resolve();
-                    }
-                };
-                chrome.tabs.onUpdated.addListener(listener);
+            const [currentTab] = await chrome.tabs.query({
+                active: true,
+                currentWindow: true
             });
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const isOnTargetPage = currentTab.url === targetUrl;
+            tabToUse = currentTab;
+            if (!isOnTargetPage) {
+                tabToUse = await chrome.tabs.create({ url: targetUrl });
+                shouldCloseTab = true;
 
-            try {
-                await chrome.scripting.executeScript({
-                    target: { tabId: tabToUse.id! },
-                    func: () => {
-                        return document.readyState === 'complete' &&
-                               typeof fetch !== 'undefined' &&
-                               document.body !== null;
-                    }
+                await new Promise<void>((resolve) => {
+                    const listener = (tabId: number, changeInfo: any) => {
+                        if (tabId === tabToUse.id && changeInfo.status === 'complete') {
+                            chrome.tabs.onUpdated.removeListener(listener);
+                            resolve();
+                        }
+                    };
+                    chrome.tabs.onUpdated.addListener(listener);
                 });
-            } catch (e) {
-                loading = false;
-                console.error('Page readiness check failed:', e);
-            }
-        }
 
-        if (!tabToUse.id) return;
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-        const results = await chrome.scripting.executeScript({
-            target: { tabId: tabToUse.id },
-            world: 'MAIN',
-            func: async (termId: string) => {
                 try {
-                    const r0 = await fetch(`https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/reset?term=${termId}`, {
-                        credentials: 'include'
+                    await chrome.scripting.executeScript({
+                        target: { tabId: tabToUse.id! },
+                        func: () => {
+                            return document.readyState === 'complete' &&
+                                   typeof fetch !== 'undefined' &&
+                                   document.body !== null;
+                        }
                     });
-                    await r0.json();
-					const r1 = await fetch('https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=', {
-						credentials: 'include'
-					});
-					return await r1.json();
-				} catch (e) {
-					return ({ error: (e as Error).message });
-				}
-            },
-            args: [term]
-        });
-
-        data = results[0]?.result ?? [];
-
-        const newData = await fetch(`${API.baseUrl}/process_courses`, {
-            method: 'POST',
-            body: JSON.stringify(data),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${jwt_token}`
+                } catch (e) {
+                    console.error('Page readiness check failed:', e);
+                }
             }
-        });
 
-        const response = await newData.json();
-        storedProcessedData.update((list) => {
-            const tid = String(term);
-            const i = list.findIndex((x) => String(x.termId) === tid);
-            const next = [...list];
-            if (i >= 0) next[i] = { termId: tid, responseData: response };
-            else next.push({ termId: tid, responseData: response });
-            return next;
-        });
+            if (!tabToUse?.id) return;
 
-        if (shouldCloseTab && tabToUse.id) {
-            await chrome.tabs.remove(tabToUse.id);
-        }
-            loading = false;
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: tabToUse.id },
+                world: 'MAIN',
+                func: async (termId: string) => {
+                    try {
+                        const r0 = await fetch(`https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/reset?term=${termId}`, {
+                            credentials: 'include'
+                        });
+                        await r0.json();
+    					const r1 = await fetch('https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=', {
+    						credentials: 'include'
+    					});
+    					return await r1.json();
+    				} catch (e) {
+    					return ({ error: (e as Error).message });
+    				}
+                },
+                args: [term]
+            });
+
+            const registrationData = results[0]?.result ?? [];
+            const newData = await fetch(`${API.baseUrl}/process_courses`, {
+                method: 'POST',
+                body: JSON.stringify(registrationData),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwt_token}`
+                }
+            });
+
+            if (!newData.ok) {
+                throw new Error(`Failed to process courses: ${newData.status} ${newData.statusText}`);
+            }
+
+            const response = await newData.json();
+            if (typeof response === 'string') {
+                return { ics_url: response };
+            }
+            return response;
         } catch (e) {
             console.error('Failed to fetch from current page:', e);
+            return undefined;
+        } finally {
+            if (shouldCloseTab && tabToUse?.id) {
+                await chrome.tabs.remove(tabToUse.id);
+            }
+        }
+    }
+
+    async function ensureProcessedForTerm(termId: string | undefined) {
+        if (!termId || loading) return;
+        try {
+            loading = true;
+            const status = await API.userIsProcessed(termId);
+            if (status?.processed) {
+                const events = await API.getProcessedEvents(termId);
+                let ics = $storedIcsUrl;
+                if (!ics) {
+                    const icsResponse = await API.getIcsUrl();
+                    ics = icsResponse.ics_url;
+                    if (ics) {
+                        storedIcsUrl.set(ics);
+                    }
+                }
+                storedProcessedData.update((list) => {
+                    const tid = String(termId);
+                    const i = list.findIndex((x) => String(x.termId) === tid);
+                    const next = [...list];
+                    const response: ResponseData = { ics_url: ics ?? '', classes: events.classes };
+                    if (i >= 0) next[i] = { termId: tid, responseData: response };
+                    else next.push({ termId: tid, responseData: response });
+                    return next;
+                });
+            } else {
+                await runScrapeAndProcess(termId);
+            }
+        } catch (e) {
+            console.error('Failed to ensure processed for term:', e);
+        } finally {
+            loading = false;
+        }
+    }
+
+    async function runScrapeAndProcess(termId: string | undefined) {
+        if (!termId || loading) return;
+        try {
+            loading = true;
+            const res = await fetchFromCurrentPage(termId);
+            if (!res?.ics_url) {
+                console.error('No ICS URL in response from fetchFromCurrentPage');
+                return;
+            }
+            storedIcsUrl.set(res.ics_url);
+            const events = await API.getProcessedEvents(termId);
+            storedProcessedData.update((list) => {
+                const tid = String(termId);
+                const i = list.findIndex((x) => String(x.termId) === tid);
+                const next = [...list];
+                const response: ResponseData = { ics_url: res.ics_url, classes: events.classes };
+                if (i >= 0) next[i] = { termId: tid, responseData: response };
+                else next.push({ termId: tid, responseData: response });
+                return next;
+            });
+        } catch (e) {
+            console.error('Failed to scrape and process:', e);
+        } finally {
             loading = false;
         }
     }
@@ -259,8 +266,7 @@
         checkBetaAccess();
         jwt_token = await API.getJwtToken();
         terms = await API.getTerms();
-        userSettings = await API.userSettings();
-		storedUserSettings.set(userSettings);
+        storedUserSettings.set(await API.userSettings());
     });
 
     $effect(() => {
@@ -271,11 +277,11 @@
     });
 
     $effect(() => {
-        if (userChangedTerm && selected && !$storedProcessedData.some((d) => String(d.termId) === selected) && !loading && !attemptedTerms.has(selected)) {
+        if (selected && !$storedProcessedData.some((d) => String(d.termId) === selected) && !loading && !attemptedTerms.has(selected)) {
             const next = new Set(attemptedTerms);
             next.add(selected);
             attemptedTerms = next;
-            fetchFromCurrentPage(selected);
+            ensureProcessedForTerm(selected);
         }
     });
 </script>
@@ -297,7 +303,7 @@
                     <Button
                         variant="filled"
                         square
-                        onclick={() => fetchFromCurrentPage(selected)}
+                        onclick={() => runScrapeAndProcess(selected)}
                     >
                     <span class="flex flex-row gap-2 items-center">
                         <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" fill="#FFF3"/><path d="M8 2v4M16 2v4M3 10h18" stroke="currentColor" stroke-linecap="round"/><circle cx="7.5" cy="15.5" r="1.25" fill="currentColor"/><circle cx="12" cy="15.5" r="1.25" fill="currentColor"/><circle cx="16.5" cy="15.5" r="1.25" fill="currentColor"/></svg>
@@ -332,9 +338,9 @@
         <hr class="w-full border-outline-variant" />
         {#if tab == "a"}
             <ConnectedButtons>
-                <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id?.toString()} onchange={() => userChangedTerm = true} />
+                <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id?.toString()} onchange={async () => { const tid = terms?.current_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
                 <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
-                <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id?.toString()} onchange={() => userChangedTerm = true} />
+                <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id?.toString()} onchange={async () => { const tid = terms?.next_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
                 <Button for="seg-b" variant="filled">{terms?.next_term.name}</Button>
             </ConnectedButtons>
         {/if}
@@ -383,7 +389,7 @@
                                                 <button
                                                     class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
                                                     style="background-color: {isLab ? labColor : lectureColor}; left: {startOffset}rem; width: {width}rem; border-color: {isLab ? labColor : lectureColor};"
-                                                    onclick={() => {activeCourse = course}}
+                                                    onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day}}
                                                 >
                                                     <div class="font-medium truncate">{course.title}</div>
 													<div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>
@@ -412,8 +418,8 @@
         class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
         role="button"
         tabindex="-1"
-        onclick={() => activeCourse = undefined}
-        onkeydown={(e) => e.key === 'Escape' && (activeCourse = undefined)}
+        onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notiTime = "30"; notiTimeType = "minutes"; courseColor = "#d50000";}}
+        onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notiTime = "30"), (notiTimeType = "minutes"), (courseColor = "#d50000"))}
     >
         <div
             transition:scale={{ duration: 200, start: 0.95 }}
@@ -460,7 +466,8 @@
                             bind:value={courseColor}
                         />
                     </div>
-
+                    <h2> Day: {activeDay?.label ?? getMeetingDayLabel(activeMeeting ?? activeCourse.meeting_times[0])}</h2>
+                    <h2> Meeting ID: {activeMeeting?.id ?? activeCourse.meeting_times[0]?.id ?? "Unknown"}</h2>
                 </div>
             </div>
         </div>

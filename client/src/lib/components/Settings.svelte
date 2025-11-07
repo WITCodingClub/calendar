@@ -4,9 +4,8 @@
     import { API } from "$lib/api";
     import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
-	import { userSettings as storedUserSettings } from "$lib/store";
-    import { isOtherCalendar as storedIsOtherCalendar } from "$lib/store";
-    import { processedData as storedProcessedData } from "$lib/store";
+import { userSettings as storedUserSettings } from "$lib/store";
+import { processedData as storedProcessedData } from "$lib/store";
 
     let userSettings = $state<UserSettings | undefined>(undefined);
     let email = $state<string | undefined>(undefined);
@@ -23,7 +22,7 @@
 			if (!userSettings) return;
 			userSettings.default_color_lecture = value;
 			storedUserSettings.set(userSettings);
-			API.updateUserSettings(userSettings);
+			API.userSettings(userSettings);
 		}
     }
 
@@ -33,7 +32,7 @@
 			if (!userSettings) return;
 			userSettings.military_time = value === "true";
 			storedUserSettings.set(userSettings);
-			API.updateUserSettings(userSettings);
+			API.userSettings(userSettings);
 		}
     }
 
@@ -43,7 +42,7 @@
 			if (!userSettings) return;
 			userSettings.default_color_lab = value;
 			storedUserSettings.set(userSettings);
-			API.updateUserSettings(userSettings);
+			API.userSettings(userSettings);
 		}
     }
 
@@ -52,7 +51,6 @@
         localStorage.clear();
         sessionStorage.clear();
         storedUserSettings.set(undefined);
-        storedIsOtherCalendar.set(false);
         storedProcessedData.set([]);
         await goto('/');
     }

@@ -1,4 +1,4 @@
-import type { UserSettings } from "./types";
+import type { UserSettings, isProcessed, ProcessedEvents } from "./types";
 
 export class API {
     public static readonly baseUrl = 'https://heron-selected-literally.ngrok-free.app/api';
@@ -28,7 +28,7 @@ export class API {
         return response.json();
     }
 
-    public static async userSettings(settings?: UserSettings) {
+    public static async userSettings(settings?: UserSettings): Promise<UserSettings> {
         const url = `${this.baseUrl}/user/extension_config`;
         const token = await this.getJwtToken();
         const headers: HeadersInit = {
@@ -54,38 +54,41 @@ export class API {
         }
     }
 
-    public static async getUserSettings(): Promise<UserSettings> {
-        const url = `${this.baseUrl}/user/extension_config`;
+    public static async userIsProcessed(termUid: string): Promise<isProcessed> {
         const token = await this.getJwtToken();
-        const response = await fetch(url, {
+        const response = await fetch(`${this.baseUrl}/user/is_processed`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ term_uid: termUid })
+        });
+        return response.json();
+    }
+
+    public static async getProcessedEvents(termUid: string): Promise<ProcessedEvents> {
+        const token = await this.getJwtToken();
+        const response = await fetch(`${this.baseUrl}/user/processed_events`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ term_uid: termUid })
+        });
+        return response.json();
+    }
+
+    public static async getIcsUrl(): Promise<{ ics_url: string }> {
+        const token = await this.getJwtToken();
+        const response = await fetch(`${this.baseUrl}/user/ics_url`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        const data = await response.json();
-        return data;
+        return response.json();
     }
-
-    public static async updateUserSettings(settings: UserSettings): Promise<UserSettings> {
-        const url = `${this.baseUrl}/user/extension_config`;
-        const token = await this.getJwtToken();
-        const response = await fetch(url, {
-            method: 'PUT',
-            body: JSON.stringify(settings),
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        const data = await response.json();
-        return data;
-    }
-
-    public static settings = () => ({
-        military_time: async () => (await this.getUserSettings()).military_time,
-        default_color_lecture: async () => (await this.getUserSettings()).default_color_lecture,
-        default_color_lab: async () => (await this.getUserSettings()).default_color_lab,
-    });
 
 }
