@@ -328,7 +328,7 @@
         <div class="not-peak">
             <VariableTabs secondary={true}
                 items={[
-                    { name: "Calendar View", value: "a" },
+                    { name: "Calendar", value: "a" },
                     { name: "Settings", value: "settings" }, 
                     { name: "Help", value: "help" },
                 ]}
