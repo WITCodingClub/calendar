@@ -25,6 +25,9 @@
     "identity",
     "identity.email"
   ],
+  "icons": {
+    "128": "icon128.png"
+  },
   "host_permissions": [
     "https://selfservice.wit.edu/*",
     "https://heron-selected-literally.ngrok-free.app/*"
