@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="https://raw.githubusercontent.com/WITCodingClub/calendar/refs/heads/main/resources/W-Calendar-outlined-back-only.png" width="128" alt="WIT-calendar Icon"/>
+</p>
+
 <h3 align="center">
     <strong>WIT-Calendar</strong>
 </h3>
@@ -17,4 +21,5 @@ You can also manage event alerts, colors, and titles from within the extension.
 
 ## Development
 - See instructions for developing up the extension [here](https://github.com/WITCodingClub/calendar/blob/main/client/README.md).
+
 - See instructions for developing up the backend [here](https://github.com/jaspermayone/witcc-calendar-backend/blob/main/README.md).
