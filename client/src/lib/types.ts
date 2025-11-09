@@ -32,6 +32,7 @@ interface MeetingTime {
     friday: boolean;
     saturday: boolean;
     sunday: boolean;
+    color?: string;
 }
 
 interface isProcessed {

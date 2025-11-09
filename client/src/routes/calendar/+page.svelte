@@ -443,6 +443,30 @@
 					return next;
 				});
 			}
+			if (colorChanged && meetingId && selected) {
+				storedProcessedData.update((list) => {
+					const tid = String(selected);
+					const i = list.findIndex((x) => String(x.termId) === tid);
+					if (i < 0) return list;
+					const entry = list[i];
+					const classes = entry.responseData.classes.map((c) => {
+						if (!c.meeting_times.some((mt) => mt.id === meetingId)) return c;
+						const updatedMeetingTimes = c.meeting_times.map((mt) =>
+							mt.id === meetingId ? { ...mt, color: courseColor } : mt
+						);
+						return { ...c, meeting_times: updatedMeetingTimes };
+					});
+					const next = [...list];
+					next[i] = {
+						termId: entry.termId,
+						responseData: {
+							ics_url: entry.responseData.ics_url,
+							classes
+						}
+					};
+					return next;
+				});
+			}
             activeCourse = undefined;
             activeMeeting = undefined;
             activeDay = undefined;
@@ -618,7 +642,8 @@
                                                 {@const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8}
                                                 {@const width = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) / 60 * 8}
                                                 {@const isLab = course.schedule_type.toLowerCase() === 'laboratory'}
-                                                {@const bgColor = isLab ? labColor : lectureColor}
+												{@const bgColorBase = isLab ? labColor : lectureColor}
+												{@const bgColor = meeting.color ?? bgColorBase}
                                                 {@const textColor = getTextColor(bgColor)}
 
 
