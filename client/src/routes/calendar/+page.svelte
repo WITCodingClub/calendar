@@ -429,6 +429,7 @@
             editTitleManual = currentEventPrefs.preview?.title ?? "";
             editDescriptionManual = currentEventPrefs.preview?.description ?? "";
             editLocationManual = currentEventPrefs.preview?.location ?? "";
+            courseColor = resolved?.color_id ?? "#d50000";
             
             if (resolved?.reminder_settings && resolved.reminder_settings.length > 0) {
                 //@ts-ignore
