@@ -373,6 +373,20 @@
         }
 
         if (Object.keys(event_preference).length === 0) {
+            activeCourse = undefined;
+            activeMeeting = undefined;
+            activeDay = undefined;
+            currentEventPrefs = undefined;
+            editTitle = "";
+            editDescription = "";
+            editLocation = "";
+            editTitleManual = "";
+            editDescriptionManual = "";
+            editLocationManual = "";
+            courseColor = "#d50000";
+            notifications = [{ time: "30", type: "minutes", method: "notification" }];
+            editMode = false;
+            snackbar('No changes made!', undefined, true);
             return;
         }
 
@@ -389,6 +403,19 @@
             snackbar('Failed to save event preferences: ' + put.statusText, undefined, true);
         } else {
             snackbar('Event preferences saved successfully!', undefined, true);
+            activeCourse = undefined;
+            activeMeeting = undefined;
+            activeDay = undefined;
+            currentEventPrefs = undefined;
+            editTitle = "";
+            editDescription = "";
+            editLocation = "";
+            editTitleManual = "";
+            editDescriptionManual = "";
+            editLocationManual = "";
+            courseColor = "#d50000";
+            notifications = [{ time: "30", type: "minutes", method: "notification" }];
+            editMode = false;
         }
     }
 
