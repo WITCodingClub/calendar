@@ -88,6 +88,51 @@ interface DayItem {
     order: number;
 }
 
+interface EventPreferences {
+    title_template: string;
+    description_template: string;
+    reminder_settings: ReminderSettings[];
+    color_id: string;
+    visibility: string;
+}
+
+interface TemplateVariables {
+    title: string;               
+    course_code: string;         
+    subject: string;             
+    course_number: string;       
+    section_number: string;      
+    crn: string;                 
+    room: string;                
+    building: string;            
+    location: string;            
+    faculty: string;             
+    all_faculty: string;
+    start_time: string;          
+    end_time: string;            
+    day: string;                 
+    day_abbr: string;            
+    term: string;                
+    schedule_type: string;       
+}
+
+interface Preview {
+    title: string;
+    description: string;
+    location: string;
+}
+
+interface GetPreferencesResponse {
+    individual_preference: EventPreferences;
+    preview: Preview;
+    templates: TemplateVariables[];
+}
+
+interface ReminderSettings {
+    minutes: number;
+    method: string;
+}
+
 export {
   type Building,
   type Course,
@@ -102,5 +147,10 @@ export {
   type TermResponse,
   type isProcessed,
   type ProcessedEvents,
-  type DayItem
+  type DayItem,
+  type EventPreferences,
+  type ReminderSettings,
+  type GetPreferencesResponse,
+  type Preview,
+  type TemplateVariables
 };

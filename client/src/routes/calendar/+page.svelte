@@ -1,8 +1,9 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { processedData as storedProcessedData, icsUrl as storedIcsUrl } from '$lib/store';
-    import type { Course, MeetingTime, ResponseData, TermResponse, DayItem } from '$lib/types';
-    import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons } from 'm3-svelte';
+    import type { Course, MeetingTime, ResponseData, TermResponse, DayItem, GetPreferencesResponse, EventPreferences, Preview, TemplateVariables } from '$lib/types';
+    import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons, TextFieldOutlinedMultiline, Chip } from 'm3-svelte';
+    import { hdrifyBackground } from '@cattn/hdr';
     import { onMount } from 'svelte';
     import { fade, scale } from 'svelte/transition';
     import { API } from '$lib/api';
@@ -26,6 +27,11 @@
     let lectureColor = $derived($storedUserSettings?.default_color_lecture ?? "#5484ed");
     let labColor = $derived($storedUserSettings?.default_color_lab ?? "#ffb878");
     let otherCalUser = $state(false);
+    let currentEventPrefs = $state<GetPreferencesResponse | undefined>(undefined);
+    let eventPreferences: EventPreferences | undefined = $derived(currentEventPrefs?.individual_preference);
+    let preview: Preview | undefined = $derived(currentEventPrefs?.preview);
+    let templates: TemplateVariables[] | undefined = $derived(currentEventPrefs?.templates);
+    let editMode = $state(false);
 
     async function checkBetaAccess() {
         const beta_access = await chrome.storage.local.get('beta_access');
@@ -92,14 +98,6 @@
             console.error('Failed to copy ICS URL to clipboard:', error);
             snackbar('Failed to copy ICS URL to clipboard: ' + error, undefined, true);
         }
-    }
-
-    function getMeetingDayLabel(meeting: MeetingTime | undefined): string {
-        if (!meeting) return "Unknown";
-        for (const d of dayOrder) {
-            if (meeting[d.key as keyof MeetingTime]) return d.label;
-        }
-        return "Unknown";
     }
 
     async function fetchFromCurrentPage(term: string | undefined): Promise<{ ics_url: string } | undefined> {
@@ -232,6 +230,17 @@
         }
     }
 
+    async function getEventPerfs(eventId: number) {
+        const res = await fetch(`${API.baseUrl}/meeting_times/${eventId}/preference`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${jwt_token}`
+            }
+        });
+        const data = await res.json();
+        currentEventPrefs = data;
+    }
+
     async function runScrapeAndProcess(termId: string | undefined) {
         if (!termId || loading) return;
         try {
@@ -267,11 +276,18 @@
         return stored;
     }
 
+    async function saveEventPerfs() {
+        console.log(editTitle, editDescription, editLocation);
+    }
+
     let tab = $state("a");
 
     let notiTime = $state("30");
     let notiTimeType = $state("minutes");
     let courseColor = $state("#d50000");
+    let editTitle = $state("");
+    let editDescription = $state("");
+    let editLocation = $state("");
 
     
 
@@ -296,6 +312,14 @@
             next.add(selected);
             attemptedTerms = next;
             ensureProcessedForTerm(selected);
+        }
+    });
+
+    $effect(() => {
+        if (currentEventPrefs && activeCourse) {
+            editTitle = preview?.title ?? activeCourse.title;
+            editDescription = preview?.description ?? '';
+            editLocation = preview?.location ?? '';
         }
     });
 </script>
@@ -404,8 +428,9 @@
 
                                                 <button
                                                     class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
+                                                    {@attach hdrifyBackground()}
                                                     style="background-color: {isLab ? labColor : lectureColor}; left: {startOffset}rem; width: {width}rem; border-color: {isLab ? labColor : lectureColor};"
-                                                    onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day; snackbar('Showing event!', undefined, true)}}
+                                                    onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day; getEventPerfs(meeting.id)}}
                                                 >
                                                     <div class="font-medium truncate">{course.title}</div>
 													<div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>
@@ -429,65 +454,71 @@
 </div>
 
 {#if activeCourse && tab === "a"}
-    <div
-        transition:fade={{ duration: 200 }}
-        class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
-        role="button"
-        tabindex="-1"
-        onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notiTime = "30"; notiTimeType = "minutes"; courseColor = "#d50000";}}
-        onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notiTime = "30"), (notiTimeType = "minutes"), (courseColor = "#d50000"))}
-    >
+    {#if currentEventPrefs}
         <div
-            transition:scale={{ duration: 200, start: 0.95 }}
-            class="bg-surface-container-low rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            role="dialog"
-            aria-modal="true"
+            transition:fade={{ duration: 200 }}
+            class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
+            role="button"
             tabindex="-1"
-            onclick={(e) => e.stopPropagation()}
-            onkeydown={(e) => e.stopPropagation()}
+            onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notiTime = "30"; notiTimeType = "minutes"; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = "";}}
+            onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notiTime = "30"), (notiTimeType = "minutes"), (courseColor = "#d50000"), (currentEventPrefs = undefined), (editTitle = ""), (editDescription = ""), (editLocation = ""))}
         >
-            <div class="flex flex-col gap-4 p-6">
-                <h1 class="text-2xl font-bold mb-2">Edit Calendar Event</h1>
-                <TextFieldOutlined label="Course Title" value={activeCourse.title} />
-                <div class="flex flex-col gap-3">
-                    <h2 class="text-md">Remind me before class</h2>
-                    <div class="flex flex-row gap-2 items-center stuff-moment">
-                        <TextFieldOutlined type="number" label="" bind:value={notiTime} />
-                        <SelectOutlined label=""
-                            options={[
-                            { text: "minutes", value: "minutes" },
-                            { text: "hours", value: "hours" },
-                            { text: "days", value: "days" },
-                            ]}
-                            bind:value={notiTimeType}
-                        />
+            <div
+                transition:scale={{ duration: 200, start: 0.95 }}
+                class="bg-surface-container-low rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                role="dialog"
+                aria-modal="true"
+                tabindex="-1"
+                onclick={(e) => e.stopPropagation()}
+                onkeydown={(e) => e.stopPropagation()}
+            >
+                <div class="flex flex-col gap-4 p-6">
+                    <div class="mb-2 flex flex-row gap-2 items-center">
+                        <h1 class="text-2xl font-bold">Edit Calendar Event</h1>
+                        <Chip selected={editMode} variant="input" onclick={() => {editMode = !editMode}}>Edit Mode</Chip>
                     </div>
-                    <h2 class="text-md">Color</h2>
-                    <div class="flex flex-row gap-2 items-center">
-                        <div class="w-6 h-6 rounded-full border-2 border-outline other-stuff" style="background-color: {courseColor};"></div>
-                        <SelectOutlined label=""
-                            options={[
-                                { text: "Tomato", value: "#d50000" },
-                                { text: "Flamingo", value: "#e67c73" },
-                                { text: "Tangerine", value: "#f4511e" },
-                                { text: "Banana", value: "#f6bf26" },
-                                { text: "Sage", value: "#33b679" },
-                                { text: "Basil", value: "#0b8043" },
-                                { text: "Peacock", value: "#039be5" },
-                                { text: "Blueberry", value: "#3f51b5" },
-                                { text: "Lavender", value: "#7986cb" },
-                                { text: "Grape", value: "#8e24aa" },
-                                { text: "Graphite", value: "#616161" },
-                            ]}
-                            bind:value={courseColor}
-                        />
+                    <TextFieldOutlined label="Course Title" bind:value={editTitle} />
+                    <TextFieldOutlinedMultiline label="Course Description" bind:value={editDescription} rows={1} />
+                    <TextFieldOutlined label="Course Location" bind:value={editLocation} />
+                    <div class="flex flex-col gap-3">
+                        <h2 class="text-md">Remind me before class</h2>
+                        <div class="flex flex-row gap-2 items-center stuff-moment">
+                            <TextFieldOutlined type="number" label="" bind:value={notiTime} />
+                            <SelectOutlined label=""
+                                options={[
+                                { text: "minutes", value: "minutes" },
+                                { text: "hours", value: "hours" },
+                                { text: "days", value: "days" },
+                                ]}
+                                bind:value={notiTimeType}
+                            />
+                        </div>
+                        <h2 class="text-md">Color</h2>
+                        <div class="flex flex-row gap-2 items-center">
+                            <div class="w-6 h-6 rounded-full border-2 border-outline other-stuff" style="background-color: {courseColor};"></div>
+                            <SelectOutlined label=""
+                                options={[
+                                    { text: "Tomato", value: "#d50000" },
+                                    { text: "Flamingo", value: "#e67c73" },
+                                    { text: "Tangerine", value: "#f4511e" },
+                                    { text: "Banana", value: "#f6bf26" },
+                                    { text: "Sage", value: "#33b679" },
+                                    { text: "Basil", value: "#0b8043" },
+                                    { text: "Peacock", value: "#039be5" },
+                                    { text: "Blueberry", value: "#3f51b5" },
+                                    { text: "Lavender", value: "#7986cb" },
+                                    { text: "Grape", value: "#8e24aa" },
+                                    { text: "Graphite", value: "#616161" },
+                                ]}
+                                bind:value={courseColor}
+                            />
+                        </div>
+                        <Button variant="outlined" square onclick={saveEventPerfs}>Save</Button>
                     </div>
-                    <h2> Day: {activeDay?.label ?? getMeetingDayLabel(activeMeeting ?? activeCourse.meeting_times[0])}</h2>
-                    <h2> Meeting ID: {activeMeeting?.id ?? activeCourse.meeting_times[0]?.id ?? "Unknown"}</h2>
                 </div>
             </div>
         </div>
-    </div>
+    {/if}
 {/if}
 
 <style>
