@@ -20,6 +20,7 @@ The chrome extension gets your schedule, processes it, and then provides you wit
 You can also manage event alerts, colors, and titles from within the extension.
 
 ## Development
-- See instructions for developing up the extension [here](https://github.com/WITCodingClub/calendar/blob/main/client/README.md).
+- See instructions for developing the extension [here](https://github.com/WITCodingClub/calendar/blob/main/client/README.md).
 
-- See instructions for developing up the backend [here](https://github.com/jaspermayone/witcc-calendar-backend/blob/main/README.md).
+- See instructions for developing the backend [here](https://github.com/jaspermayone/witcc-calendar-backend/blob/main/README.md).
+
