@@ -423,15 +423,22 @@
 				updatedTitle = parseTemplate(editTitle).join('');
 			}
 			const meetingId = activeMeeting?.id;
-			if (updatedTitle && meetingId && selected) {
+			const dayKey = activeDay?.key;
+			if (updatedTitle && meetingId && selected && dayKey) {
 				storedProcessedData.update((list) => {
 					const tid = String(selected);
 					const i = list.findIndex((x) => String(x.termId) === tid);
 					if (i < 0) return list;
 					const entry = list[i];
-					const classes = entry.responseData.classes.map((c) =>
-						c.meeting_times.some((mt) => mt.id === meetingId) ? { ...c, title: updatedTitle! } : c
-					);
+					const classes = entry.responseData.classes.map((c) => {
+						if (!c.meeting_times.some((mt) => mt.id === meetingId)) return c;
+						const updatedMeetingTimes = c.meeting_times.map((mt) => {
+							if (mt.id !== meetingId) return mt;
+							const existing = mt.title_overrides ?? {};
+							return { ...mt, title_overrides: { ...existing, [dayKey]: updatedTitle! } };
+						});
+						return { ...c, meeting_times: updatedMeetingTimes };
+					});
 					const next = [...list];
 					next[i] = {
 						termId: entry.termId,
@@ -652,7 +659,7 @@
                                                     style="background-color: {bgColor}; color: {textColor}; left: {startOffset}rem; width: {width}rem; border-color: {bgColor};"
                                                     onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day; getEventPerfs(meeting.id)}}
                                                 >
-                                                    <div class="font-medium truncate">{course.title}</div>
+													<div class="font-medium truncate">{meeting.title_overrides?.[day.key] ?? course.title}</div>
 													<div class="opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>
                                                     <div class="opacity-70 text-[10px]">{meeting.location.building.abbreviation} {meeting.location.room}</div>
                                                 </button>

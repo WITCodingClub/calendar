@@ -33,6 +33,7 @@ interface MeetingTime {
     saturday: boolean;
     sunday: boolean;
     color?: string;
+    title_overrides?: Partial<Record<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', string>>;
 }
 
 interface isProcessed {
