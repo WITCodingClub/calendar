@@ -3,7 +3,6 @@
     import { processedData as storedProcessedData, icsUrl as storedIcsUrl } from '$lib/store';
     import type { Course, MeetingTime, ResponseData, TermResponse, DayItem, GetPreferencesResponse, EventPreferences, Preview, TemplateVariables } from '$lib/types';
     import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons, TextFieldOutlinedMultiline, Chip } from 'm3-svelte';
-    import { hdrifyBackground } from '@cattn/hdr';
     import { onMount } from 'svelte';
     import { fade, scale } from 'svelte/transition';
     import { API } from '$lib/api';
@@ -424,11 +423,10 @@
                                                 {@const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8}
                                                 {@const width = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) / 60 * 8}
                                                 {@const isLab = course.schedule_type.toLowerCase() === 'laboratory'}
-                                            
+
 
                                                 <button
                                                     class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
-                                                    {@attach hdrifyBackground()}
                                                     style="background-color: {isLab ? labColor : lectureColor}; left: {startOffset}rem; width: {width}rem; border-color: {isLab ? labColor : lectureColor};"
                                                     onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day; getEventPerfs(meeting.id)}}
                                                 >

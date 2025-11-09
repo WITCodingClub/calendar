@@ -39,7 +39,6 @@
 		"vite": "^7.1.7"
 	},
 	"dependencies": {
-		"@cattn/hdr": "^0.2.6",
 		"@types/chrome": "^0.1.27",
 		"m3-svelte": "^5.12.0"
 	}
