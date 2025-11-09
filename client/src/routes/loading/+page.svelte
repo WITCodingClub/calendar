@@ -3,6 +3,7 @@
     import { goto } from '$app/navigation';
     import { LoadingIndicator, Button } from 'm3-svelte';
     import { API } from '$lib/api';
+    import { snackbar } from 'm3-svelte';
 
     let schoolEmail = $state('');
     let error = $state<string | null>(null);
@@ -75,6 +76,7 @@
             signIn();
         } catch (err) {
             error = 'Failed to fetch data! Make';
+            snackbar('Failed to fetch data: ' + err, undefined, true);
         }
     }
 
@@ -110,6 +112,7 @@
             goto('/onboard');
         } catch (err) {
             error = 'Server is (probably) down! Please email mayonej@wit.edu! Also, make';
+            snackbar('Failed to sign in: ' + err, undefined, true);
         }
     }
 </script>

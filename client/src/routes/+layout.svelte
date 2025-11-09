@@ -3,6 +3,7 @@
 	import '../app.css';
 
 	let { children } = $props();
+	import { NewSnackbar } from 'm3-svelte';
 </script>
 
 <svelte:head>
@@ -12,3 +13,4 @@
 <div class="overflow-x-hidden">
 	{@render children?.()}
 </div>
+<NewSnackbar />

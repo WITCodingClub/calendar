@@ -9,6 +9,8 @@
     import Settings from '$lib/components/Settings.svelte';
     import Help from '$lib/components/Help.svelte';
     import { userSettings as storedUserSettings } from '$lib/store';
+    import { browser } from '$app/environment';
+    import { snackbar } from 'm3-svelte';
 
 	let selected: string | undefined = $state(undefined);
 	let responseData: ResponseData | undefined = $derived($storedProcessedData.find((d) => String(d.termId) === selected)?.responseData);
@@ -23,6 +25,7 @@
     let militaryTime = $derived($storedUserSettings?.military_time ?? true);
     let lectureColor = $derived($storedUserSettings?.default_color_lecture ?? "#5484ed");
     let labColor = $derived($storedUserSettings?.default_color_lab ?? "#ffb878");
+    let otherCalUser = $state(false);
 
     async function checkBetaAccess() {
         const beta_access = await chrome.storage.local.get('beta_access');
@@ -84,8 +87,10 @@
 
         try {
             await navigator.clipboard.writeText(icsUrlToCopy);
+            snackbar('ICS URL copied to clipboard!', undefined, true);
         } catch (error) {
             console.error('Failed to copy ICS URL to clipboard:', error);
+            snackbar('Failed to copy ICS URL to clipboard: ' + error, undefined, true);
         }
     }
 
@@ -220,6 +225,7 @@
                 await runScrapeAndProcess(termId);
             }
         } catch (e) {
+            snackbar('Failed to fetch calendar: ' + e, undefined, true);
             console.error('Failed to ensure processed for term:', e);
         } finally {
             loading = false;
@@ -233,6 +239,7 @@
             const res = await fetchFromCurrentPage(termId);
             if (!res?.ics_url) {
                 console.error('No ICS URL in response from fetchFromCurrentPage');
+                snackbar('Failed to fetch calendar: No ICS URL in response', undefined, true);
                 return;
             }
             storedIcsUrl.set(res.ics_url);
@@ -244,13 +251,20 @@
                 const response: ResponseData = { ics_url: res.ics_url, classes: events.classes };
                 if (i >= 0) next[i] = { termId: tid, responseData: response };
                 else next.push({ termId: tid, responseData: response });
+                snackbar('Calendar fetched successfully!', undefined, true);
                 return next;
             });
         } catch (e) {
             console.error('Failed to scrape and process:', e);
+            snackbar('Failed to fetch calendar: ' + e, undefined, true);
         } finally {
             loading = false;
         }
+    }
+
+    function checkIsOtherCalendar() {
+        const stored = browser ? localStorage.getItem('isOtherCalendar') === 'true' : false;
+        return stored;
     }
 
     let tab = $state("a");
@@ -266,6 +280,7 @@
         jwt_token = await API.getJwtToken();
         terms = await API.getTerms();
         storedUserSettings.set(await API.userSettings());
+        otherCalUser = checkIsOtherCalendar();
     });
 
     $effect(() => {
@@ -319,9 +334,11 @@
                 <p class="text-md text-secondary text-center">
                     Copy the link below and add it to your calendar app.
                 </p>
-                <div class="flex flex-row gap-2 items-center">
-                    <Button variant="outlined" square onclick={copyIcsToClipboard}>Copy Calendar Link</Button>
-                </div>
+                {#if otherCalUser}
+                    <div class="flex flex-row gap-2 items-center">
+                        <Button variant="outlined" square onclick={copyIcsToClipboard}>Copy Calendar Link</Button>
+                    </div>
+                {/if}
             </div>
         </div>
         <div class="not-peak">
@@ -388,7 +405,7 @@
                                                 <button
                                                     class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
                                                     style="background-color: {isLab ? labColor : lectureColor}; left: {startOffset}rem; width: {width}rem; border-color: {isLab ? labColor : lectureColor};"
-                                                    onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day}}
+                                                    onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day; snackbar('Showing event!', undefined, true)}}
                                                 >
                                                     <div class="font-medium truncate">{course.title}</div>
 													<div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>

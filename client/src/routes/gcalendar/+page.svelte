@@ -3,6 +3,7 @@
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
     import { API } from '$lib/api';
+    import { snackbar } from 'm3-svelte';
 
     let jwt_token: string | undefined = $state(undefined);
     let emailToSignInWith: string | null = $state(null);
@@ -80,6 +81,8 @@
                 oauth_email: emailToSignInWith || emailToSubmit,
             });
             goto('/calendar');
+        } else {
+            snackbar('Failed to submit email: ' + data.error, undefined, true);
         }
     }
 
