@@ -334,6 +334,7 @@
             description_template: string;
             location_template: string;
             reminder_settings: ReminderSettings[];
+            color_id: string;
         }> = {};
 
         const titleChanged = editTitle !== (resolved?.title_template ?? titleTemplates[0]);
@@ -352,6 +353,11 @@
         const locationManualChanged = editLocationManual !== currentEventPrefs?.preview?.location;
         if (locationChanged || locationManualChanged) {
             event_preference.location_template = locationChanged ? editLocation : editLocationManual;
+        }
+
+        const colorChanged = courseColor !== resolved?.color_id;
+        if (colorChanged) {
+            event_preference.color_id = courseColor;
         }
 
         //@ts-ignore
