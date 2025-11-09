@@ -40,6 +40,9 @@
                     selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory
                 </a>
             </li>
+            <li>
+                You can expand the extension sidebar by dragging the left edge to see more of your calendar.
+            </li>
         </ul>
     </div>
     <div class="flex justify-center items-center peak">
