@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { processedData as storedProcessedData, icsUrl as storedIcsUrl } from '$lib/store';
-    import type { Course, MeetingTime, ResponseData, TermResponse } from '$lib/types';
+    import type { Course, MeetingTime, ResponseData, TermResponse, DayItem } from '$lib/types';
     import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons } from 'm3-svelte';
     import { onMount } from 'svelte';
     import { fade, scale } from 'svelte/transition';
@@ -16,7 +16,6 @@
 	let processedData: Course[] | undefined = $derived(responseData?.classes);
     let activeCourse: Course | undefined = $state(undefined);
     let activeMeeting: MeetingTime | undefined = $state(undefined);
-    type DayItem = { key: keyof MeetingTime; label: string; abbr: string; order: number };
     let activeDay: DayItem | undefined = $state(undefined);
     let loading = $state(false);
     let terms = $state<TermResponse | undefined>(undefined);
@@ -48,7 +47,7 @@
 		return `${h12}:00 ${period}`;
 	}
 
-    const dayOrder = [
+    const dayOrder: DayItem[] = [
         { key: 'monday', label: 'Monday', abbr: 'M', order: 0 },
         { key: 'tuesday', label: 'Tuesday', abbr: 'T', order: 1 },
         { key: 'wednesday', label: 'Wednesday', abbr: 'W', order: 2 },

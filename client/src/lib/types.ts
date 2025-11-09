@@ -81,6 +81,13 @@ interface TermResponse {
     next_term: NextTerm;
 }
 
+interface DayItem {
+    key: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+    label: string;
+    abbr: string;
+    order: number;
+}
+
 export {
   type Building,
   type Course,
@@ -94,5 +101,6 @@ export {
   type NextTerm,
   type TermResponse,
   type isProcessed,
-  type ProcessedEvents
+  type ProcessedEvents,
+  type DayItem
 };
