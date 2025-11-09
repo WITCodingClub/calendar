@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { processedData as storedProcessedData, icsUrl as storedIcsUrl } from '$lib/store';
-    import type { Course, MeetingTime, ResponseData, TermResponse, DayItem, GetPreferencesResponse, EventPreferences, Preview, TemplateVariables } from '$lib/types';
+    import type { Course, MeetingTime, ResponseData, TermResponse, DayItem, GetPreferencesResponse, EventPreferences, Preview, TemplateVariables, ResolvedData, NotificationSetting } from '$lib/types';
     import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons, TextFieldOutlinedMultiline, Chip } from 'm3-svelte';
     import { onMount } from 'svelte';
     import { fade, scale } from 'svelte/transition';
@@ -29,8 +29,54 @@
     let currentEventPrefs = $state<GetPreferencesResponse | undefined>(undefined);
     let eventPreferences: EventPreferences | undefined = $derived(currentEventPrefs?.individual_preference);
     let preview: Preview | undefined = $derived(currentEventPrefs?.preview);
-    let templates: TemplateVariables[] | undefined = $derived(currentEventPrefs?.templates);
+    let templates: TemplateVariables | undefined = $derived(currentEventPrefs?.templates);
+    let resolved: ResolvedData | undefined = $derived(currentEventPrefs?.resolved);
     let editMode = $state(false);
+
+    let titleTemplates = [
+        "{{title}}",
+        "{{title}} - {{schedule_type}}"
+    ]
+    let descriptionTemplates = [
+        "{{faculty}}\n{{faculty_email}}",
+        "{{faculty}}\n{{faculty_email}}\n{{course_code}} {{course_number}}",
+        "{{term}} - {{schedule_type}}"
+    ]
+    let locationTemplates = [
+        "{{building}} - {{room}}",
+        "{{building}} {{room}}"
+    ]
+
+	function parseTemplate(t: string): string[] {
+		const result: string[] = [];
+		let lastIndex = 0;
+		const regex = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
+		let m: RegExpExecArray | null;
+		while ((m = regex.exec(t)) !== null) {
+			if (m.index > lastIndex) {
+				result.push(t.slice(lastIndex, m.index));
+			}
+			const key = m[1] as keyof TemplateVariables;
+			let value = templates?.[key] ?? '';
+			if (key === 'schedule_type') {
+				value = value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : value;
+			}
+			result.push(value);
+			lastIndex = regex.lastIndex;
+		}
+		if (lastIndex < t.length) {
+			result.push(t.slice(lastIndex));
+		}
+		return result;
+	}
+
+	let derivedTemplates = $derived.by(() => {
+		return {
+			titleTemplates: titleTemplates.map(parseTemplate),
+			descriptionTemplates: descriptionTemplates.map(parseTemplate),
+			locationTemplates: locationTemplates.map(parseTemplate)
+		};
+	});
 
     async function checkBetaAccess() {
         const beta_access = await chrome.storage.local.get('beta_access');
@@ -277,18 +323,21 @@
 
     async function saveEventPerfs() {
         console.log(editTitle, editDescription, editLocation);
+        const payload = notifications;
+        console.log(payload);
+        return payload;
     }
 
     let tab = $state("a");
 
-    let notiTime = $state("30");
-    let notiTimeType = $state("minutes");
+    let notifications = $state<NotificationSetting[]>([{ time: "30", type: "minutes" }]);
     let courseColor = $state("#d50000");
     let editTitle = $state("");
     let editDescription = $state("");
     let editLocation = $state("");
-
-    
+    let editTitleText = $derived(parseTemplate(editTitle).join(''));
+    let editDescriptionText = $derived(parseTemplate(editDescription).join(''));
+    let editLocationText = $derived(parseTemplate(editLocation).join(''));
 
     onMount(async () => {
         checkBetaAccess();
@@ -313,12 +362,12 @@
             ensureProcessedForTerm(selected);
         }
     });
-
+    
     $effect(() => {
-        if (currentEventPrefs && activeCourse) {
-            editTitle = preview?.title ?? activeCourse.title;
-            editDescription = preview?.description ?? '';
-            editLocation = preview?.location ?? '';
+        if (currentEventPrefs) {
+            editTitle = (resolved?.title_template ?? titleTemplates[0]) || "";
+            editDescription = (resolved?.description_template ?? descriptionTemplates[0]) || "";
+            editLocation = (resolved?.location_template ?? locationTemplates[0]) || "";
         }
     });
 </script>
@@ -458,8 +507,8 @@
             class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
             role="button"
             tabindex="-1"
-            onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notiTime = "30"; notiTimeType = "minutes"; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = "";}}
-            onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notiTime = "30"), (notiTimeType = "minutes"), (courseColor = "#d50000"), (currentEventPrefs = undefined), (editTitle = ""), (editDescription = ""), (editLocation = ""))}
+            onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = "";}}
+            onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notifications = [{ time: "30", type: "minutes" }]), (courseColor = "#d50000"), (currentEventPrefs = undefined), (editTitle = ""), (editDescription = ""), (editLocation = ""))}
         >
             <div
                 transition:scale={{ duration: 200, start: 0.95 }}
@@ -473,24 +522,60 @@
                 <div class="flex flex-col gap-4 p-6">
                     <div class="mb-2 flex flex-row gap-2 items-center">
                         <h1 class="text-2xl font-bold">Edit Calendar Event</h1>
-                        <Chip selected={editMode} variant="input" onclick={() => {editMode = !editMode}}>Edit Mode</Chip>
+                        <Chip selected={editMode} variant="input" onclick={() => {editMode = !editMode}}>Edit Manually</Chip>
                     </div>
-                    <TextFieldOutlined label="Course Title" bind:value={editTitle} />
-                    <TextFieldOutlinedMultiline label="Course Description" bind:value={editDescription} rows={1} />
-                    <TextFieldOutlined label="Course Location" bind:value={editLocation} />
+                    {#if editMode}
+                        <TextFieldOutlined label="Course Title" bind:value={editTitleText} />
+                        <TextFieldOutlinedMultiline label="Course Description" bind:value={editDescriptionText} rows={1} />
+                        <TextFieldOutlined label="Course Location" bind:value={editLocationText} />
+                    {:else}
+                    <div class="flex flex-col gap-2">
+                        <h2 class="text-md">Course Title</h2>
+						<div class="flex flex-row gap-2 items-center">
+							{#each derivedTemplates.titleTemplates as template, i}
+								{@const selected = (editTitle && titleTemplates.includes(editTitle)) ? (editTitle === titleTemplates[i]) : (resolved?.title_template === titleTemplates[i])}
+								<Chip selected={selected} variant="input" onclick={() => {editTitle = titleTemplates[i];}}>{template.join('')}</Chip>
+                            {/each}
+                        </div>
+                        <h2 class="text-md">Course Description</h2>
+                        <div class="flex flex-row gap-2 items-center peak">
+							{#each derivedTemplates.descriptionTemplates as template, i}
+								{@const selected = (editDescription && descriptionTemplates.includes(editDescription)) ? (editDescription === descriptionTemplates[i]) : (resolved?.description_template === descriptionTemplates[i])}
+								<Chip selected={selected} variant="input" onclick={() => {editDescription = descriptionTemplates[i];}}>{template.join('')}</Chip>
+                            {/each}
+                        </div>
+                        <h2 class="text-md">Course Location</h2>
+                        <div class="flex flex-row gap-2 items-center">
+							{#each derivedTemplates.locationTemplates as template, i}
+								{@const selected = (editLocation && locationTemplates.includes(editLocation)) ? (editLocation === locationTemplates[i]) : (resolved?.location_template === locationTemplates[i])}
+								<Chip selected={selected} variant="input" onclick={() => {editLocation = locationTemplates[i];}}>{template.join('')}</Chip>
+                            {/each}
+                        </div>
+                    </div>
+                    {/if}
                     <div class="flex flex-col gap-3">
                         <h2 class="text-md">Remind me before class</h2>
-                        <div class="flex flex-row gap-2 items-center stuff-moment">
-                            <TextFieldOutlined type="number" label="" bind:value={notiTime} />
+                        {#each notifications as n, i}
+                        <div class="flex flex-row gap-2 items-center stuff-moment peak">
+                            <TextFieldOutlined type="number" label="" bind:value={notifications[i].time} />
                             <SelectOutlined label=""
                                 options={[
                                 { text: "minutes", value: "minutes" },
                                 { text: "hours", value: "hours" },
                                 { text: "days", value: "days" },
                                 ]}
-                                bind:value={notiTimeType}
+                                bind:value={notifications[i].type}
                             />
+                            {#if notifications.length > 1}
+                                <Button variant="tonal" onclick={() => { notifications = notifications.filter((_, idx) => idx !== i); }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6 13q-.425 0-.712-.288T5 12t.288-.712T6 11h12q.425 0 .713.288T19 12t-.288.713T18 13z"/></svg>
+                                </Button>
+                            {/if}
+                            {#if i === notifications.length - 1}
+                                <Button variant="tonal" onclick={() => { notifications = [...notifications, { time: "30", type: "minutes" }]; }}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21q-.425 0-.712-.288T11 20v-7H4q-.425 0-.712-.288T3 12t.288-.712T4 11h7V4q0-.425.288-.712T12 3t.713.288T13 4v7h7q.425 0 .713.288T21 12t-.288.713T20 13h-7v7q0 .425-.288.713T12 21"/></svg></Button>
+                            {/if}
                         </div>
+                        {/each}
                         <h2 class="text-md">Color</h2>
                         <div class="flex flex-row gap-2 items-center">
                             <div class="w-6 h-6 rounded-full border-2 border-outline other-stuff" style="background-color: {courseColor};"></div>
@@ -511,7 +596,7 @@
                                 bind:value={courseColor}
                             />
                         </div>
-                        <Button variant="outlined" square onclick={saveEventPerfs}>Save</Button>
+                        <Button variant="tonal" square onclick={saveEventPerfs}>Save</Button>
                     </div>
                 </div>
             </div>
@@ -527,5 +612,4 @@
     :global(.peak button) {
         height: 2.5rem !important;
     }
-
 </style>

@@ -24,7 +24,7 @@
             
             const isOnTargetPage = currentTab.url === targetUrl;
             let tabToUse = currentTab;
-            let shouldCloseTab = false;
+            let shouldCloseTab = true;
             
             if (!isOnTargetPage) {
                 tabToUse = await chrome.tabs.create({ url: targetUrl });

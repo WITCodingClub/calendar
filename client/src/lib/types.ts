@@ -106,7 +106,8 @@ interface TemplateVariables {
     room: string;                
     building: string;            
     location: string;            
-    faculty: string;             
+    faculty: string;
+    faculty_email: string;        
     all_faculty: string;
     start_time: string;          
     end_time: string;            
@@ -114,6 +115,15 @@ interface TemplateVariables {
     day_abbr: string;            
     term: string;                
     schedule_type: string;       
+}
+
+interface ResolvedData {
+    title_template: string;
+    description_template: string;
+    location_template: string;
+    reminder_settings: ReminderSettings[];
+    color_id: string;
+    visibility: string;
 }
 
 interface Preview {
@@ -125,12 +135,20 @@ interface Preview {
 interface GetPreferencesResponse {
     individual_preference: EventPreferences;
     preview: Preview;
-    templates: TemplateVariables[];
+    templates: TemplateVariables;
+    resolved: ResolvedData;
 }
 
 interface ReminderSettings {
     minutes: number;
     method: string;
+}
+
+type NotificationType = "minutes" | "hours" | "days";
+
+interface NotificationSetting {
+    time: string;
+    type: NotificationType;
 }
 
 export {
@@ -152,5 +170,8 @@ export {
   type ReminderSettings,
   type GetPreferencesResponse,
   type Preview,
-  type TemplateVariables
+  type TemplateVariables,
+  type ResolvedData,
+  type NotificationType,
+  type NotificationSetting
 };
