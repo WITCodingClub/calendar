@@ -140,15 +140,18 @@ interface GetPreferencesResponse {
 }
 
 interface ReminderSettings {
-    minutes: number;
+    time: number;
     method: string;
+    type: NotificationType;
 }
 
 type NotificationType = "minutes" | "hours" | "days";
+type NotificationMethod = "email" | "notification";
 
 interface NotificationSetting {
     time: string;
     type: NotificationType;
+    method: NotificationMethod;
 }
 
 export {
@@ -173,5 +176,6 @@ export {
   type TemplateVariables,
   type ResolvedData,
   type NotificationType,
-  type NotificationSetting
+  type NotificationSetting,
+  type NotificationMethod
 };

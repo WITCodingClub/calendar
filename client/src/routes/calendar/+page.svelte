@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { processedData as storedProcessedData, icsUrl as storedIcsUrl } from '$lib/store';
-    import type { Course, MeetingTime, ResponseData, TermResponse, DayItem, GetPreferencesResponse, EventPreferences, Preview, TemplateVariables, ResolvedData, NotificationSetting } from '$lib/types';
+    import type { Course, MeetingTime, ResponseData, TermResponse, DayItem, GetPreferencesResponse, TemplateVariables, ResolvedData, NotificationSetting, ReminderSettings, NotificationMethod } from '$lib/types';
     import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons, TextFieldOutlinedMultiline, Chip } from 'm3-svelte';
     import { onMount } from 'svelte';
     import { fade, scale } from 'svelte/transition';
@@ -23,12 +23,10 @@
     let terms = $state<TermResponse | undefined>(undefined);
 	let attemptedTerms = $state(new Set<string>());
     let militaryTime = $derived($storedUserSettings?.military_time ?? true);
-    let lectureColor = $derived($storedUserSettings?.default_color_lecture ?? "#5484ed");
-    let labColor = $derived($storedUserSettings?.default_color_lab ?? "#ffb878");
+    let lectureColor = $derived($storedUserSettings?.default_color_lecture ?? "#039be5");
+    let labColor = $derived($storedUserSettings?.default_color_lab ?? "#f6bf26");
     let otherCalUser = $state(false);
     let currentEventPrefs = $state<GetPreferencesResponse | undefined>(undefined);
-    let eventPreferences: EventPreferences | undefined = $derived(currentEventPrefs?.individual_preference);
-    let preview: Preview | undefined = $derived(currentEventPrefs?.preview);
     let templates: TemplateVariables | undefined = $derived(currentEventPrefs?.templates);
     let resolved: ResolvedData | undefined = $derived(currentEventPrefs?.resolved);
     let editMode = $state(false);
@@ -92,6 +90,15 @@
 		const period = hours >= 12 ? 'PM' : 'AM';
 		const hours12 = hours % 12 || 12;
 		return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+	}
+
+	function getTextColor(bgColor: string): string {
+		const hex = bgColor.replace('#', '');
+		const r = parseInt(hex.substring(0, 2), 16);
+		const g = parseInt(hex.substring(2, 4), 16);
+		const b = parseInt(hex.substring(4, 6), 16);
+		const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+		return luminance > 0.5 ? '#000000' : '#ffffff';
 	}
 
 	function formatHourLabel(hour: number): string {
@@ -322,22 +329,73 @@
     }
 
     async function saveEventPerfs() {
-        console.log(editTitle, editDescription, editLocation);
-        const payload = notifications;
-        console.log(payload);
-        return payload;
+        const event_preference: Partial<{
+            title_template: string;
+            description_template: string;
+            location_template: string;
+            reminder_settings: ReminderSettings[];
+        }> = {};
+
+        const titleChanged = editTitle !== (resolved?.title_template ?? titleTemplates[0]);
+        const titleManualChanged = editTitleManual !== currentEventPrefs?.preview?.title;
+        if (titleChanged || titleManualChanged) {
+            event_preference.title_template = titleChanged ? editTitle : editTitleManual;
+        }
+
+        const descriptionChanged = editDescription !== (resolved?.description_template ?? descriptionTemplates[0]);
+        const descriptionManualChanged = editDescriptionManual !== currentEventPrefs?.preview?.description;
+        if (descriptionChanged || descriptionManualChanged) {
+            event_preference.description_template = descriptionChanged ? editDescription : editDescriptionManual;
+        }
+
+        const locationChanged = editLocation !== (resolved?.location_template ?? locationTemplates[0]);
+        const locationManualChanged = editLocationManual !== currentEventPrefs?.preview?.location;
+        if (locationChanged || locationManualChanged) {
+            event_preference.location_template = locationChanged ? editLocation : editLocationManual;
+        }
+
+        //@ts-ignore
+        const convertedNotifications: ReminderSettings[] = notifications.map(n => ({
+            time: (n.time).toString(),
+            type: n.type,
+            method: n.method
+        }));
+
+        const notificationsChanged = JSON.stringify(convertedNotifications) !== JSON.stringify(resolved?.reminder_settings);
+        if (notificationsChanged) {
+            event_preference.reminder_settings = convertedNotifications;
+        }
+
+        if (Object.keys(event_preference).length === 0) {
+            return;
+        }
+
+        const payload = { event_preference };
+        const put = await fetch(`${API.baseUrl}/meeting_times/${activeMeeting?.id}/preference`, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+            headers: {
+                'Authorization': `Bearer ${jwt_token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!put.ok) {
+            snackbar('Failed to save event preferences: ' + put.statusText, undefined, true);
+        } else {
+            snackbar('Event preferences saved successfully!', undefined, true);
+        }
     }
 
     let tab = $state("a");
 
-    let notifications = $state<NotificationSetting[]>([{ time: "30", type: "minutes" }]);
+    let notifications = $state<NotificationSetting[]>([{ time: "30", type: "minutes", method: "notification" }]);
     let courseColor = $state("#d50000");
     let editTitle = $state("");
     let editDescription = $state("");
     let editLocation = $state("");
-    let editTitleText = $derived(parseTemplate(editTitle).join(''));
-    let editDescriptionText = $derived(parseTemplate(editDescription).join(''));
-    let editLocationText = $derived(parseTemplate(editLocation).join(''));
+    let editTitleManual = $state("");
+    let editDescriptionManual = $state("");
+    let editLocationManual = $state("");
 
     onMount(async () => {
         checkBetaAccess();
@@ -368,6 +426,20 @@
             editTitle = (resolved?.title_template ?? titleTemplates[0]) || "";
             editDescription = (resolved?.description_template ?? descriptionTemplates[0]) || "";
             editLocation = (resolved?.location_template ?? locationTemplates[0]) || "";
+            editTitleManual = currentEventPrefs.preview?.title ?? "";
+            editDescriptionManual = currentEventPrefs.preview?.description ?? "";
+            editLocationManual = currentEventPrefs.preview?.location ?? "";
+            
+            if (resolved?.reminder_settings && resolved.reminder_settings.length > 0) {
+                //@ts-ignore
+                notifications = resolved.reminder_settings.map(r => ({
+                    time: parseInt(r.time.toString()),
+                    type: r.type,
+                    method: r.method as NotificationMethod
+                }));
+            } else {
+                notifications = [{ time: "30", type: "minutes", method: "notification" }];
+            }
         }
     });
 </script>
@@ -472,16 +544,18 @@
                                                 {@const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8}
                                                 {@const width = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) / 60 * 8}
                                                 {@const isLab = course.schedule_type.toLowerCase() === 'laboratory'}
+                                                {@const bgColor = isLab ? labColor : lectureColor}
+                                                {@const textColor = getTextColor(bgColor)}
 
 
                                                 <button
                                                     class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
-                                                    style="background-color: {isLab ? labColor : lectureColor}; left: {startOffset}rem; width: {width}rem; border-color: {isLab ? labColor : lectureColor};"
+                                                    style="background-color: {bgColor}; color: {textColor}; left: {startOffset}rem; width: {width}rem; border-color: {bgColor};"
                                                     onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day; getEventPerfs(meeting.id)}}
                                                 >
                                                     <div class="font-medium truncate">{course.title}</div>
-													<div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>
-                                                    <div class="{isLab ? 'text-on-tertiary-container' : 'text-on-primary-container'} opacity-70 text-[10px]">{meeting.location.building.abbreviation} {meeting.location.room}</div>
+													<div class="opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>
+                                                    <div class="opacity-70 text-[10px]">{meeting.location.building.abbreviation} {meeting.location.room}</div>
                                                 </button>
                                             {/if}
                                         {/each}
@@ -507,8 +581,8 @@
             class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
             role="button"
             tabindex="-1"
-            onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = "";}}
-            onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notifications = [{ time: "30", type: "minutes" }]), (courseColor = "#d50000"), (currentEventPrefs = undefined), (editTitle = ""), (editDescription = ""), (editLocation = ""))}
+            onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;}}
+            onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notifications = [{ time: "30", type: "minutes", method: "notification" }]), (courseColor = "#d50000"), (currentEventPrefs = undefined), (editTitle = ""), (editDescription = ""), (editLocation = ""), (editTitleManual = ""), (editDescriptionManual = ""), (editLocationManual = ""), (editMode = false))}
         >
             <div
                 transition:scale={{ duration: 200, start: 0.95 }}
@@ -525,26 +599,26 @@
                         <Chip selected={editMode} variant="input" onclick={() => {editMode = !editMode}}>Edit Manually</Chip>
                     </div>
                     {#if editMode}
-                        <TextFieldOutlined label="Course Title" bind:value={editTitleText} />
-                        <TextFieldOutlinedMultiline label="Course Description" bind:value={editDescriptionText} rows={1} />
-                        <TextFieldOutlined label="Course Location" bind:value={editLocationText} />
+                        <TextFieldOutlined label="Course Title" bind:value={editTitleManual} />
+                        <TextFieldOutlinedMultiline label="Course Description" bind:value={editDescriptionManual} rows={1} />
+                        <TextFieldOutlined label="Course Location" bind:value={editLocationManual} />
                     {:else}
                     <div class="flex flex-col gap-2">
-                        <h2 class="text-md">Course Title</h2>
+                        <h2 class="text-md">Event Title</h2>
 						<div class="flex flex-row gap-2 items-center">
 							{#each derivedTemplates.titleTemplates as template, i}
 								{@const selected = (editTitle && titleTemplates.includes(editTitle)) ? (editTitle === titleTemplates[i]) : (resolved?.title_template === titleTemplates[i])}
 								<Chip selected={selected} variant="input" onclick={() => {editTitle = titleTemplates[i];}}>{template.join('')}</Chip>
                             {/each}
                         </div>
-                        <h2 class="text-md">Course Description</h2>
+                        <h2 class="text-md">Event Description</h2>
                         <div class="flex flex-row gap-2 items-center peak">
 							{#each derivedTemplates.descriptionTemplates as template, i}
 								{@const selected = (editDescription && descriptionTemplates.includes(editDescription)) ? (editDescription === descriptionTemplates[i]) : (resolved?.description_template === descriptionTemplates[i])}
 								<Chip selected={selected} variant="input" onclick={() => {editDescription = descriptionTemplates[i];}}>{template.join('')}</Chip>
                             {/each}
                         </div>
-                        <h2 class="text-md">Course Location</h2>
+                        <h2 class="text-md">Event Location</h2>
                         <div class="flex flex-row gap-2 items-center">
 							{#each derivedTemplates.locationTemplates as template, i}
 								{@const selected = (editLocation && locationTemplates.includes(editLocation)) ? (editLocation === locationTemplates[i]) : (resolved?.location_template === locationTemplates[i])}
@@ -555,8 +629,15 @@
                     {/if}
                     <div class="flex flex-col gap-3">
                         <h2 class="text-md">Remind me before class</h2>
-                        {#each notifications as n, i}
+                        {#each notifications, i}
                         <div class="flex flex-row gap-2 items-center stuff-moment peak">
+                            <SelectOutlined label=""
+                                options={[
+                                { text: "Notification", value: "notification" },
+                                { text: "Email", value: "email" },
+                                ]}
+                                bind:value={notifications[i].method}
+                            />
                             <TextFieldOutlined type="number" label="" bind:value={notifications[i].time} />
                             <SelectOutlined label=""
                                 options={[
@@ -572,7 +653,7 @@
                                 </Button>
                             {/if}
                             {#if i === notifications.length - 1}
-                                <Button variant="tonal" onclick={() => { notifications = [...notifications, { time: "30", type: "minutes" }]; }}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21q-.425 0-.712-.288T11 20v-7H4q-.425 0-.712-.288T3 12t.288-.712T4 11h7V4q0-.425.288-.712T12 3t.713.288T13 4v7h7q.425 0 .713.288T21 12t-.288.713T20 13h-7v7q0 .425-.288.713T12 21"/></svg></Button>
+                                <Button variant="tonal" onclick={() => { notifications = [...notifications, { time: "30", type: "minutes", method: "notification" }]; }}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21q-.425 0-.712-.288T11 20v-7H4q-.425 0-.712-.288T3 12t.288-.712T4 11h7V4q0-.425.288-.712T12 3t.713.288T13 4v7h7q.425 0 .713.288T21 12t-.288.713T20 13h-7v7q0 .425-.288.713T12 21"/></svg></Button>
                             {/if}
                         </div>
                         {/each}

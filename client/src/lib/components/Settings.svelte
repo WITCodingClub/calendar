@@ -65,17 +65,17 @@ import { processedData as storedProcessedData } from "$lib/store";
             <div class="w-6 h-6 rounded-full border-2 border-outline other-stuff" style="background-color: {userSettings?.default_color_lecture};"></div>
             <SelectOutlined label=""
                 options={[
-                    { text: "Tomato", value: "#dc2127" },
-                    { text: "Flamingo", value: "#ff887c" },
-                    { text: "Tangerine", value: "#ffb878" },
-                    { text: "Banana", value: "#fbd75b" },
-                    { text: "Sage", value: "#7ae7bf" },
-                    { text: "Basil", value: "#51b749" },
-                    { text: "Peacock", value: "#46d6db" },
-                    { text: "Blueberry", value: "#5484ed" },
-                    { text: "Lavender", value: "#a4bdfc" },
-                    { text: "Grape", value: "#dbadff" },
-                    { text: "Graphite", value: "#e1e1e1" },
+                    { text: "Tomato", value: "#d50000" },
+                    { text: "Flamingo", value: "#e67c73" },
+                    { text: "Tangerine", value: "#f4511e" },
+                    { text: "Banana", value: "#f6bf26" },
+                    { text: "Sage", value: "#33b679" },
+                    { text: "Basil", value: "#0b8043" },
+                    { text: "Peacock", value: "#039be5" },
+                    { text: "Blueberry", value: "#3f51b5" },
+                    { text: "Lavender", value: "#7986cb" },
+                    { text: "Grape", value: "#8e24aa" },
+                    { text: "Graphite", value: "#616161" },
                 ]}
                 bind:value={defaultColorLectureGetterSetter.value}
             />
@@ -87,17 +87,17 @@ import { processedData as storedProcessedData } from "$lib/store";
             <div class="w-6 h-6 rounded-full border-2 border-outline other-stuff" style="background-color: {userSettings?.default_color_lab};"></div>
             <SelectOutlined label=""
                 options={[
-                    { text: "Tomato", value: "#dc2127" },
-                    { text: "Flamingo", value: "#ff887c" },
-                    { text: "Tangerine", value: "#ffb878" },
-                    { text: "Banana", value: "#fbd75b" },
-                    { text: "Sage", value: "#7ae7bf" },
-                    { text: "Basil", value: "#51b749" },
-                    { text: "Peacock", value: "#46d6db" },
-                    { text: "Blueberry", value: "#5484ed" },
-                    { text: "Lavender", value: "#a4bdfc" },
-                    { text: "Grape", value: "#dbadff" },
-                    { text: "Graphite", value: "#e1e1e1" },
+                    { text: "Tomato", value: "#d50000" },
+                    { text: "Flamingo", value: "#e67c73" },
+                    { text: "Tangerine", value: "#f4511e" },
+                    { text: "Banana", value: "#f6bf26" },
+                    { text: "Sage", value: "#33b679" },
+                    { text: "Basil", value: "#0b8043" },
+                    { text: "Peacock", value: "#039be5" },
+                    { text: "Blueberry", value: "#3f51b5" },
+                    { text: "Lavender", value: "#7986cb" },
+                    { text: "Grape", value: "#8e24aa" },
+                    { text: "Graphite", value: "#616161" },
                 ]}
                 bind:value={defaultColorLabGetterSetter.value}
             />
