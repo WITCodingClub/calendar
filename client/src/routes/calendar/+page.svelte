@@ -549,10 +549,10 @@
         <div>
             <div class="flex flex-col gap-1 items-center">
                 <h1 class="text-xl font-bold text-primary text-center mb-1">Your Calendar</h1>
-                <p class="text-md text-secondary text-center">
-                    Copy the link below and add it to your calendar app.
-                </p>
                 {#if otherCalUser}
+                    <p class="text-md text-secondary text-center">
+                        Copy the link below and add it to your calendar app.
+                    </p>
                     <div class="flex flex-row gap-2 items-center">
                         <Button variant="outlined" square onclick={copyIcsToClipboard}>Copy Calendar Link</Button>
                     </div>
