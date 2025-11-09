@@ -400,9 +400,49 @@
             }
         });
         if (!put.ok) {
+            activeCourse = undefined;
+            activeMeeting = undefined;
+            activeDay = undefined;
+            currentEventPrefs = undefined;
+            editTitle = "";
+            editDescription = "";
+            editLocation = "";
+            editTitleManual = "";
+            editDescriptionManual = "";
+            editLocationManual = "";
+            courseColor = "#d50000";
+            notifications = [{ time: "30", type: "minutes", method: "notification" }];
+            editMode = false;
             snackbar('Failed to save event preferences: ' + put.statusText, undefined, true);
         } else {
             snackbar('Event preferences saved successfully!', undefined, true);
+			let updatedTitle: string | undefined = undefined;
+			if (titleManualChanged) {
+				updatedTitle = editTitleManual;
+			} else if (titleChanged) {
+				updatedTitle = parseTemplate(editTitle).join('');
+			}
+			const meetingId = activeMeeting?.id;
+			if (updatedTitle && meetingId && selected) {
+				storedProcessedData.update((list) => {
+					const tid = String(selected);
+					const i = list.findIndex((x) => String(x.termId) === tid);
+					if (i < 0) return list;
+					const entry = list[i];
+					const classes = entry.responseData.classes.map((c) =>
+						c.meeting_times.some((mt) => mt.id === meetingId) ? { ...c, title: updatedTitle! } : c
+					);
+					const next = [...list];
+					next[i] = {
+						termId: entry.termId,
+						responseData: {
+							ics_url: entry.responseData.ics_url,
+							classes
+						}
+					};
+					return next;
+				});
+			}
             activeCourse = undefined;
             activeMeeting = undefined;
             activeDay = undefined;
