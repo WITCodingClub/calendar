@@ -778,18 +778,25 @@
             class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
             role="button"
             tabindex="-1"
-            onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;}}
             onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notifications = [{ time: "30", type: "minutes", method: "notification" }]), (courseColor = "#d50000"), (currentEventPrefs = undefined), (editTitle = ""), (editDescription = ""), (editLocation = ""), (editTitleManual = ""), (editDescriptionManual = ""), (editLocationManual = ""), (editMode = false))}
+            onclick={(e) => {e.stopPropagation();}}
         >
             <div
                 transition:scale={{ duration: 200, start: 0.95 }}
-                class="bg-surface-container-low rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                class="relative bg-surface-container-low rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                 role="dialog"
                 aria-modal="true"
                 tabindex="-1"
                 onclick={(e) => e.stopPropagation()}
                 onkeydown={(e) => e.stopPropagation()}
             >
+                <!-- absolute close button in top-right of the dialog -->
+                <div class="tailwindcss space-between absolute top-3 right-3 z-20">
+                    <Button variant="tonal" onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;}}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6 13q-.425 0-.712-.288T5 12t.288-.712T6 11h12q.425 0 .713.288T19 12t-.288.713T18 13z"/></svg>
+                    </Button>
+                </div>
+                
                 <div class="flex flex-col gap-4 p-6">
                     <div class="mb-2 flex flex-row gap-2 items-center">
                         <h1 class="text-2xl font-bold">Edit Calendar Event</h1>
