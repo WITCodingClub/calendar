@@ -3,7 +3,7 @@
     import { processedData as storedProcessedData, icsUrl as storedIcsUrl } from '$lib/store';
     import type { Course, MeetingTime, ResponseData, TermResponse, DayItem, GetPreferencesResponse, TemplateVariables, ResolvedData, NotificationSetting, ReminderSettings, NotificationMethod } from '$lib/types';
     import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons, TextFieldOutlinedMultiline, Chip } from 'm3-svelte';
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { fade, scale } from 'svelte/transition';
     import { API } from '$lib/api';
     import Settings from '$lib/components/Settings.svelte';
@@ -111,6 +111,47 @@
             return Promise.reject(new Error('Beta access denied')) as never;
         }
     }
+
+    onMount(async () => {
+        checkBetaAccess();
+        jwt_token = await API.getJwtToken();
+        terms = await API.getTerms();
+        storedUserSettings.set(await API.userSettings());
+        otherCalUser = checkIsOtherCalendar();
+    });
+
+    // Pointer/drag guard: prevent scrim clicks produced by dragging text
+    // that started inside the dialog from closing the modal when the user
+    // releases the pointer outside the dialog.
+    let modalEl: HTMLElement | null = $state(null);
+    let lastPointerDownInside = false;
+    let lastPointerDownInsideSnapshot = false;
+    let lastPointerUpWasOutside = false;
+
+    function onPointerDownInside() {
+        lastPointerDownInside = true;
+    }
+
+    function onWindowPointerUp(e: PointerEvent) {
+        // snapshot whether the pointerdown started inside the modal
+        lastPointerDownInsideSnapshot = lastPointerDownInside;
+        // was the pointerup target outside the modal?
+        lastPointerUpWasOutside = !(modalEl && modalEl.contains(e.target as Node));
+        // reset running flag
+        lastPointerDownInside = false;
+    }
+
+    onMount(() => {
+        if (browser && typeof window !== 'undefined') {
+            window.addEventListener('pointerup', onWindowPointerUp, true);
+        }
+    });
+
+    onDestroy(() => {
+        if (browser && typeof window !== 'undefined') {
+            window.removeEventListener('pointerup', onWindowPointerUp, true);
+        }
+    });
 
 	function convertTo12Hour(time24: string): string {
 		if (militaryTime) return time24;
@@ -583,14 +624,6 @@
     let editDescriptionManual = $state("");
     let editLocationManual = $state("");
 
-    onMount(async () => {
-        checkBetaAccess();
-        jwt_token = await API.getJwtToken();
-        terms = await API.getTerms();
-        storedUserSettings.set(await API.userSettings());
-        otherCalUser = checkIsOtherCalendar();
-    });
-
     $effect(() => {
         if (terms && !selected) {
             const initial = terms?.current_term?.id ?? terms?.next_term?.id;
@@ -778,8 +811,18 @@
             class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
             role="button"
             tabindex="-1"
+            onclick={(e) => {
+                // If a drag began inside the modal and the pointer was released outside,
+                // the subsequent scrim click is a byproduct of the drag-release. Ignore it.
+                if (lastPointerDownInsideSnapshot && lastPointerUpWasOutside) {
+                    lastPointerDownInsideSnapshot = false;
+                    lastPointerUpWasOutside = false;
+                    e.stopPropagation();
+                    return;
+                }
+                activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;
+            }}
             onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notifications = [{ time: "30", type: "minutes", method: "notification" }]), (courseColor = "#d50000"), (currentEventPrefs = undefined), (editTitle = ""), (editDescription = ""), (editLocation = ""), (editTitleManual = ""), (editDescriptionManual = ""), (editLocationManual = ""), (editMode = false))}
-            onclick={(e) => {e.stopPropagation();}}
         >
             <div
                 transition:scale={{ duration: 200, start: 0.95 }}
@@ -787,10 +830,11 @@
                 role="dialog"
                 aria-modal="true"
                 tabindex="-1"
+                bind:this={modalEl}
+                onpointerdown={(e) => { onPointerDownInside(); e.stopPropagation(); }}
                 onclick={(e) => e.stopPropagation()}
                 onkeydown={(e) => e.stopPropagation()}
             >
-
                 <div class="flex flex-col gap-4 p-6">
                     <div class="mb-2 flex flex-row gap-2 items-center">
                         <div class="flex flex-row gap-2 items-center">
