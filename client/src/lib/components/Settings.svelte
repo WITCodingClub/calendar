@@ -4,8 +4,8 @@
     import { API } from "$lib/api";
     import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
-import { userSettings as storedUserSettings } from "$lib/store";
-import { processedData as storedProcessedData } from "$lib/store";
+    import { userSettings as storedUserSettings } from "$lib/store";
+    import { processedData as storedProcessedData } from "$lib/store";
 
     let userSettings = $state<UserSettings | undefined>(undefined);
     let email = $state<string | undefined>(undefined);
