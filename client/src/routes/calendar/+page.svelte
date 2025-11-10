@@ -112,14 +112,6 @@
         }
     }
 
-    onMount(async () => {
-        checkBetaAccess();
-        jwt_token = await API.getJwtToken();
-        terms = await API.getTerms();
-        storedUserSettings.set(await API.userSettings());
-        otherCalUser = checkIsOtherCalendar();
-    });
-
     // Pointer/drag guard: prevent scrim clicks produced by dragging text
     // that started inside the dialog from closing the modal when the user
     // releases the pointer outside the dialog.
@@ -623,6 +615,14 @@
     let editTitleManual = $state("");
     let editDescriptionManual = $state("");
     let editLocationManual = $state("");
+
+    onMount(async () => {
+        checkBetaAccess();
+        jwt_token = await API.getJwtToken();
+        terms = await API.getTerms();
+        storedUserSettings.set(await API.userSettings());
+        otherCalUser = checkIsOtherCalendar();
+    });
 
     $effect(() => {
         if (terms && !selected) {
