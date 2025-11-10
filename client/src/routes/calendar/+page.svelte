@@ -22,6 +22,7 @@
     let loading = $state(false);
     let terms = $state<TermResponse | undefined>(undefined);
 	let attemptedTerms = $state(new Set<string>());
+	let refreshedTerms = $state(new Set<string>());
     let militaryTime = $derived($storedUserSettings?.military_time ?? true);
     let lectureColor = $derived($storedUserSettings?.default_color_lecture ?? "#039be5");
     let labColor = $derived($storedUserSettings?.default_color_lab ?? "#f6bf26");
@@ -33,7 +34,7 @@
 
     let titleTemplates = [
         "{{title}}",
-        "{{title}} - {{schedule_type}}"
+        "{% if schedule_type == 'Laboratory' %}{{course_code}}{% else %}{{title}} - {{schedule_type_short}}{% endif %}"
     ]
     let descriptionTemplates = [
         "{{faculty}}\n{{faculty_email}}",
@@ -46,24 +47,51 @@
     ]
 
 	function parseTemplate(t: string): string[] {
+		const evalCond = (cond: string): boolean => {
+			const m = cond.match(/^\s*([a-zA-Z0-9_]+)\s*(==|!=)\s*(["'])(.*?)\3\s*$/);
+			if (!m) return false;
+			const left = m[1] as keyof TemplateVariables;
+			const op = m[2];
+			const right = m[4];
+			const leftVal = String(templates?.[left] ?? '');
+			return op === '==' ? leftVal === right : leftVal !== right;
+		};
+		let s = t;
+		while (true) {
+			const openRe = /\{%\s*if\s+([\s\S]+?)\s*%\}/g;
+			const openMatch = openRe.exec(s);
+			if (!openMatch) break;
+			const start = openMatch.index;
+			const afterOpen = openMatch.index + openMatch[0].length;
+			const endifRe = /\{%\s*endif\s*%\}/g;
+			endifRe.lastIndex = afterOpen;
+			const endifMatch = endifRe.exec(s);
+			if (!endifMatch) break;
+			const elseRe = /\{%\s*else\s*%\}/g;
+			elseRe.lastIndex = afterOpen;
+			const elseMatch = elseRe.exec(s);
+			const hasElse = !!elseMatch && elseMatch.index < endifMatch.index;
+			const trueBlockEnd = hasElse ? elseMatch!.index : endifMatch.index;
+			const trueBlock = s.slice(afterOpen, trueBlockEnd);
+			const falseBlock = hasElse ? s.slice(elseMatch!.index + elseMatch![0].length, endifMatch.index) : '';
+			const chosen = evalCond(openMatch[1]) ? trueBlock : falseBlock;
+			s = s.slice(0, start) + chosen + s.slice(endifMatch.index + endifMatch[0].length);
+		}
 		const result: string[] = [];
 		let lastIndex = 0;
 		const regex = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
 		let m: RegExpExecArray | null;
-		while ((m = regex.exec(t)) !== null) {
+		while ((m = regex.exec(s)) !== null) {
 			if (m.index > lastIndex) {
-				result.push(t.slice(lastIndex, m.index));
+				result.push(s.slice(lastIndex, m.index));
 			}
 			const key = m[1] as keyof TemplateVariables;
 			let value = templates?.[key] ?? '';
-			if (key === 'schedule_type') {
-				value = value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : value;
-			}
 			result.push(value);
 			lastIndex = regex.lastIndex;
 		}
-		if (lastIndex < t.length) {
-			result.push(t.slice(lastIndex));
+		if (lastIndex < s.length) {
+			result.push(s.slice(lastIndex));
 		}
 		return result;
 	}
@@ -291,6 +319,60 @@
         });
         const data = await res.json();
         currentEventPrefs = data;
+    }
+
+    async function refreshAllEventPrefsForCurrentTerm() {
+        if (!selected || !jwt_token || !processedData) return;
+        const ids = Array.from(new Set(processedData.flatMap(c => c.meeting_times.map(mt => mt.id))));
+        const responses = await Promise.all(ids.map(async (id) => {
+            try {
+                const res = await fetch(`${API.baseUrl}/meeting_times/${id}/preference`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${jwt_token}` }
+                });
+                if (!res.ok) return undefined;
+                const data: GetPreferencesResponse = await res.json();
+                return { id, data };
+            } catch {
+                return undefined;
+            }
+        }));
+        const map = new Map<number, GetPreferencesResponse>();
+        for (const r of responses) {
+            if (r?.id && r.data) map.set(r.id, r.data);
+        }
+        if (map.size === 0) return;
+        const dayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const;
+        storedProcessedData.update((list) => {
+            const tid = String(selected);
+            const i = list.findIndex((x) => String(x.termId) === tid);
+            if (i < 0) return list;
+            const entry = list[i];
+            const classes = entry.responseData.classes.map((c) => {
+                const updatedMeetingTimes = c.meeting_times.map((mt) => {
+                    const pref = map.get(mt.id);
+                    if (!pref) return mt;
+                    const color = pref.resolved?.color_id ?? mt.color;
+                    let title_overrides = mt.title_overrides ?? {};
+                    const title = pref.preview?.title;
+                    if (title) {
+                        for (const k of dayKeys) {
+                            if ((mt as any)[k]) {
+                                title_overrides = { ...title_overrides, [k]: title };
+                            }
+                        }
+                    }
+                    return { ...mt, color, title_overrides };
+                });
+                return { ...c, meeting_times: updatedMeetingTimes };
+            });
+            const next = [...list];
+            next[i] = {
+                termId: entry.termId,
+                responseData: { ics_url: entry.responseData.ics_url, classes }
+            };
+            return next;
+        });
     }
 
     async function runScrapeAndProcess(termId: string | undefined) {
@@ -522,6 +604,15 @@
             next.add(selected);
             attemptedTerms = next;
             ensureProcessedForTerm(selected);
+        }
+    });
+    
+    $effect(() => {
+        if (processedData && selected && !refreshedTerms.has(selected)) {
+            const next = new Set(refreshedTerms);
+            next.add(selected);
+            refreshedTerms = next;
+            refreshAllEventPrefsForCurrentTerm();
         }
     });
     
