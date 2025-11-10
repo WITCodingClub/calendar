@@ -3,7 +3,7 @@
     import { processedData as storedProcessedData, icsUrl as storedIcsUrl } from '$lib/store';
     import type { Course, MeetingTime, ResponseData, TermResponse, DayItem, GetPreferencesResponse, TemplateVariables, ResolvedData, NotificationSetting, ReminderSettings, NotificationMethod } from '$lib/types';
     import { Button, LoadingIndicator, SelectOutlined, VariableTabs, TextFieldOutlined, ConnectedButtons, TextFieldOutlinedMultiline, Chip } from 'm3-svelte';
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { fade, scale } from 'svelte/transition';
     import { API } from '$lib/api';
     import Settings from '$lib/components/Settings.svelte';
@@ -111,6 +111,39 @@
             return Promise.reject(new Error('Beta access denied')) as never;
         }
     }
+
+    // Pointer/drag guard: prevent scrim clicks produced by dragging text
+    // that started inside the dialog from closing the modal when the user
+    // releases the pointer outside the dialog.
+    let modalEl: HTMLElement | null = $state(null);
+    let lastPointerDownInside = false;
+    let lastPointerDownInsideSnapshot = false;
+    let lastPointerUpWasOutside = false;
+
+    function onPointerDownInside() {
+        lastPointerDownInside = true;
+    }
+
+    function onWindowPointerUp(e: PointerEvent) {
+        // snapshot whether the pointerdown started inside the modal
+        lastPointerDownInsideSnapshot = lastPointerDownInside;
+        // was the pointerup target outside the modal?
+        lastPointerUpWasOutside = !(modalEl && modalEl.contains(e.target as Node));
+        // reset running flag
+        lastPointerDownInside = false;
+    }
+
+    onMount(() => {
+        if (browser && typeof window !== 'undefined') {
+            window.addEventListener('pointerup', onWindowPointerUp, true);
+        }
+    });
+
+    onDestroy(() => {
+        if (browser && typeof window !== 'undefined') {
+            window.removeEventListener('pointerup', onWindowPointerUp, true);
+        }
+    });
 
 	function convertTo12Hour(time24: string): string {
 		if (militaryTime) return time24;
@@ -778,22 +811,41 @@
             class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
             role="button"
             tabindex="-1"
-            onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;}}
+            onclick={(e) => {
+                // If a drag began inside the modal and the pointer was released outside,
+                // the subsequent scrim click is a byproduct of the drag-release. Ignore it.
+                if (lastPointerDownInsideSnapshot && lastPointerUpWasOutside) {
+                    lastPointerDownInsideSnapshot = false;
+                    lastPointerUpWasOutside = false;
+                    e.stopPropagation();
+                    return;
+                }
+                activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;
+            }}
             onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notifications = [{ time: "30", type: "minutes", method: "notification" }]), (courseColor = "#d50000"), (currentEventPrefs = undefined), (editTitle = ""), (editDescription = ""), (editLocation = ""), (editTitleManual = ""), (editDescriptionManual = ""), (editLocationManual = ""), (editMode = false))}
         >
             <div
                 transition:scale={{ duration: 200, start: 0.95 }}
-                class="bg-surface-container-low rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                class="relative bg-surface-container-low rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                 role="dialog"
                 aria-modal="true"
                 tabindex="-1"
+                bind:this={modalEl}
+                onpointerdown={(e) => { onPointerDownInside(); e.stopPropagation(); }}
                 onclick={(e) => e.stopPropagation()}
                 onkeydown={(e) => e.stopPropagation()}
             >
                 <div class="flex flex-col gap-4 p-6">
                     <div class="mb-2 flex flex-row gap-2 items-center">
-                        <h1 class="text-2xl font-bold">Edit Calendar Event</h1>
-                        <Chip selected={editMode} variant="input" onclick={() => {editMode = !editMode}}>Edit Manually</Chip>
+                        <div class="flex flex-row gap-2 items-center">
+                            <h1 class="text-2xl font-bold">Edit Calendar Event</h1>
+                            <Chip selected={editMode} variant="input" onclick={() => {editMode = !editMode}}>Edit Manually</Chip>
+                            <div class="tailwindcss flex flex-row items-center space-between absolute right-4">
+                                <Button variant="tonal" onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;}}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"/></svg>
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                     {#if editMode}
                         <TextFieldOutlined label="Course Title" bind:value={editTitleManual} />
