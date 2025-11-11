@@ -133,15 +133,35 @@
         lastPointerDownInside = false;
     }
 
+    function onWindowKeyDown(e: KeyboardEvent) {
+        if (e.key === 'Escape' && activeCourse) {
+            activeCourse = undefined;
+            activeMeeting = undefined;
+            activeDay = undefined;
+            notifications = [{ time: "30", type: "minutes", method: "notification" }];
+            courseColor = "#d50000";
+            currentEventPrefs = undefined;
+            editTitle = "";
+            editDescription = "";
+            editLocation = "";
+            editTitleManual = "";
+            editDescriptionManual = "";
+            editLocationManual = "";
+            editMode = false;
+        }
+    }
+
     onMount(() => {
         if (browser && typeof window !== 'undefined') {
             window.addEventListener('pointerup', onWindowPointerUp, true);
+            window.addEventListener('keydown', onWindowKeyDown, true);
         }
     });
 
     onDestroy(() => {
         if (browser && typeof window !== 'undefined') {
             window.removeEventListener('pointerup', onWindowPointerUp, true);
+            window.removeEventListener('keydown', onWindowKeyDown, true);
         }
     });
 
@@ -810,7 +830,7 @@
             transition:fade={{ duration: 200 }}
             class="fixed inset-0 bg-scrim/60 z-50 flex items-center justify-center p-4"
             role="button"
-            tabindex="-1"
+            tabindex="0"
             onclick={(e) => {
                 // If a drag began inside the modal and the pointer was released outside,
                 // the subsequent scrim click is a byproduct of the drag-release. Ignore it.
@@ -822,7 +842,18 @@
                 }
                 activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;
             }}
-            onkeydown={(e) => e.key === 'Escape' && ((activeCourse = undefined), (activeMeeting = undefined), (activeDay = undefined), (notifications = [{ time: "30", type: "minutes", method: "notification" }]), (courseColor = "#d50000"), (currentEventPrefs = undefined), (editTitle = ""), (editDescription = ""), (editLocation = ""), (editTitleManual = ""), (editDescriptionManual = ""), (editLocationManual = ""), (editMode = false))}
+            onkeydown={(e) => {
+                // support keyboard activation for the scrim (Enter / Space)
+                if (e.key === 'Enter' || e.key === ' ') {
+                    if (lastPointerDownInsideSnapshot && lastPointerUpWasOutside) {
+                        lastPointerDownInsideSnapshot = false;
+                        lastPointerUpWasOutside = false;
+                        e.stopPropagation();
+                        return;
+                    }
+                    activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;
+                }
+            }}
         >
             <div
                 transition:scale={{ duration: 200, start: 0.95 }}
