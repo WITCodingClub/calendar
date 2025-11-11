@@ -26,6 +26,7 @@
     let militaryTime = $derived($storedUserSettings?.military_time ?? true);
     let lectureColor = $derived($storedUserSettings?.default_color_lecture ?? "#039be5");
     let labColor = $derived($storedUserSettings?.default_color_lab ?? "#f6bf26");
+    let advancedEditing = $derived($storedUserSettings?.advanced_editing ?? false);
     let otherCalUser = $state(false);
     let currentEventPrefs = $state<GetPreferencesResponse | undefined>(undefined);
     let templates: TemplateVariables | undefined = $derived(currentEventPrefs?.templates);
@@ -878,10 +879,14 @@
                             </div>
                         </div>
                     </div>
-                    {#if editMode}
+                    {#if editMode && !advancedEditing}
                         <TextFieldOutlined label="Course Title" bind:value={editTitleManual} />
                         <TextFieldOutlinedMultiline label="Course Description" bind:value={editDescriptionManual} rows={1} />
                         <TextFieldOutlined label="Course Location" bind:value={editLocationManual} />
+                    {:else if editMode && advancedEditing}
+                        <TextFieldOutlined label="Course Title" bind:value={editTitle} />
+                        <TextFieldOutlinedMultiline label="Course Description" bind:value={editDescription} rows={1} />
+                        <TextFieldOutlined label="Course Location" bind:value={editLocation} />
                     {:else}
                     <div class="flex flex-col gap-2">
                         <h2 class="text-md">Event Title</h2>

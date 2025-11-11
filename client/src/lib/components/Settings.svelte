@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button, SelectOutlined } from "m3-svelte";
+    import { Button, SelectOutlined, Switch } from "m3-svelte";
     import type { UserSettings } from "$lib/types";
     import { API } from "$lib/api";
     import { onMount } from "svelte";
@@ -41,6 +41,16 @@
 		set value(value: string) {
 			if (!userSettings) return;
 			userSettings.default_color_lab = value;
+			storedUserSettings.set(userSettings);
+			API.userSettings(userSettings);
+		}
+    }
+
+    const advancedEditingGetterSetter = {
+        get value() { return userSettings?.advanced_editing ?? false; },
+		set value(value: boolean) {
+			if (!userSettings) return;
+			userSettings.advanced_editing = value;
 			storedUserSettings.set(userSettings);
 			API.userSettings(userSettings);
 		}
@@ -113,6 +123,14 @@
                 ]}
                 bind:value={militaryTimeGetterSetter.value}
             />
+        </div>
+    </div>
+    <div class="flex flex-row gap-3 items-center justify-between">
+        <h2 class="text-md font-bold">Advanced Editing</h2>
+        <div class="flex flex-row gap-2 items-center">
+            <label>
+                <Switch bind:checked={advancedEditingGetterSetter.value} />
+            </label>
         </div>
     </div>
     <div class="flex flex-col gap-2 items-center justify-center mt-6 w-full">
