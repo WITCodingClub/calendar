@@ -659,19 +659,14 @@
             editLocationManual = currentEventPrefs.preview?.location ?? "";
             courseColor = resolved?.color_id ?? "#d50000";
             
-            // If the server explicitly has an empty list of reminder_settings, allow
-            // the UI to show zero notifications so the user can save "no notifications".
-            if (resolved?.reminder_settings) {
+            if (resolved?.reminder_settings && resolved.reminder_settings.length > 0) {
                 //@ts-ignore
-                notifications = resolved.reminder_settings.length > 0
-                    ? resolved.reminder_settings.map(r => ({
-                        time: parseInt(r.time.toString()),
-                        type: r.type,
-                        method: r.method as NotificationMethod
-                    }))
-                    : [];
+                notifications = resolved.reminder_settings.map(r => ({
+                    time: parseInt(r.time.toString()),
+                    type: r.type,
+                    method: r.method as NotificationMethod
+                }));
             } else {
-                // legacy/default behavior: show one default reminder when no data present
                 notifications = [{ time: "30", type: "minutes", method: "notification" }];
             }
         }
