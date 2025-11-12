@@ -7,7 +7,7 @@
 </h3>
 
 <p align="center">
-    <a href="#">website</a> · <a href="#">install</a>
+    <a href="https://calendar.witcc.dev">website</a> · <a href="#">install</a>
 </p>
 
 <p align="center">
@@ -22,6 +22,6 @@ You can also manage event alerts, colors, and titles from within the extension.
 ## Development
 - See instructions for developing the extension [here](https://github.com/WITCodingClub/calendar/blob/main/client/README.md).
 
-- See instructions for developing the backend [here](https://github.com/jaspermayone/witcc-calendar-backend/blob/main/README.md).
+- See instructions for developing the backend [here](https://github.com/WITCodingClub/calendar-backend/blob/main/README.md).
 
 
