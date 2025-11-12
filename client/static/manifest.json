@@ -30,6 +30,6 @@
   },
   "host_permissions": [
     "https://selfservice.wit.edu/*",
-    "https://https://server.calendar.witcc.dev/*"
+    "https://server-calendar.witcc.dev/*"
   ]
 }

@@ -1,7 +1,7 @@
 import type { UserSettings, isProcessed, ProcessedEvents } from "./types";
 
 export class API {
-    public static readonly baseUrl = 'https://server.calendar.witcc.dev/api';
+    public static readonly baseUrl = 'https://server-calendar.witcc.dev/api';
 
     public static async getJwtToken() {
         const result = await chrome.storage.local.get('jwt_token');

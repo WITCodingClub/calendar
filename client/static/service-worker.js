@@ -1,7 +1,7 @@
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && 
       tab.url && 
-      tab.url.includes('https://server.calendar.witcc.dev/oauth/success')) {
+    tab.url.includes('https://server-calendar.witcc.dev/oauth/success')) {
     
     console.log('OAuth success page detected');
     
