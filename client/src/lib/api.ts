@@ -1,4 +1,5 @@
-import type { UserSettings, isProcessed, ProcessedEvents } from "./types";
+import { EnvironmentManager } from "./environment";
+import type { isProcessed, ProcessedEvents, UserSettings } from "./types";
 
 export class API {
     public static readonly baseUrl = 'https://heron-selected-literally.ngrok-free.app/api';
@@ -9,6 +10,15 @@ export class API {
             throw new Error('No JWT token found');
         }
         return result.jwt_token;
+    }
+
+    public static async checkFeatureFlag(flagName:string) {
+        const response = await fetch(`${this.baseUrl}/feature_flags/${flagName}`, {
+            method: 'GET'
+        });
+
+        const data = await response.json();
+        return data.is_enabled;
     }
 
     public static async getTerms() {
