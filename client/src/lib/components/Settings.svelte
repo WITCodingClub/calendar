@@ -2,6 +2,7 @@
     import { Button, SelectOutlined, Switch } from "m3-svelte";
     import type { UserSettings } from "$lib/types";
     import { API } from "$lib/api";
+    import { EnvironmentManager, ENVIRONMENTS, type Environment } from "$lib/environment";
     import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
     import { userSettings as storedUserSettings } from "$lib/store";
@@ -9,11 +10,18 @@
 
     let userSettings = $state<UserSettings | undefined>(undefined);
     let email = $state<string | undefined>(undefined);
+    let currentEnvironment = $state<Environment>('prod');
+    let authenticatedEnvironments = $state<Environment[]>([]);
 
     onMount(async () => {
+        // Migrate old JWT token format if needed
+        await EnvironmentManager.migrateOldJwtToken();
+
         userSettings = await API.userSettings();
 		storedUserSettings.set(userSettings);
         email = await API.getUserEmail().then(data => data.email);
+        currentEnvironment = await EnvironmentManager.getCurrentEnvironment();
+        authenticatedEnvironments = await EnvironmentManager.getAuthenticatedEnvironments();
     });
 
     const defaultColorLectureGetterSetter = {
@@ -56,6 +64,30 @@
 		}
     }
 
+    async function switchEnvironment(newEnv: Environment) {
+        if (newEnv === currentEnvironment) return;
+
+        const hasJwt = await EnvironmentManager.switchEnvironment(newEnv);
+        currentEnvironment = newEnv;
+
+        if (!hasJwt) {
+            // No JWT for this environment, need to go through onboarding
+            storedUserSettings.set(undefined);
+            storedProcessedData.set([]);
+            await goto('/');
+        } else {
+            // Has JWT, reload the page to fetch new data
+            window.location.reload();
+        }
+    }
+
+    const environmentGetterSetter = {
+        get value() { return currentEnvironment; },
+        set value(value: string) {
+            switchEnvironment(value as Environment);
+        }
+    }
+
     async function clearLocalStorage() {
         await chrome.storage.local.clear();
         localStorage.clear();
@@ -69,6 +101,31 @@
 <h1 class="text-lg font-bold">Currently signed in as: {email}</h1>
 
 <div class="flex flex-col gap-3">
+    <div class="flex flex-row gap-3 items-center justify-between">
+        <div class="flex flex-col">
+            <h2 class="text-md font-bold">Environment</h2>
+            <p class="text-sm text-outline">
+                {#each Object.values(ENVIRONMENTS) as env}
+                    {#if authenticatedEnvironments.includes(env.name)}
+                        <span class="text-primary">✓ {env.displayName}</span>
+                    {:else}
+                        <span class="text-outline-variant">○ {env.displayName}</span>
+                    {/if}
+                    {#if env.name !== 'prod'}&nbsp;&nbsp;{/if}
+                {/each}
+            </p>
+        </div>
+        <div class="flex flex-row gap-2 items-center">
+            <SelectOutlined label=""
+                options={[
+                    { text: ENVIRONMENTS.prod.displayName, value: "prod" },
+                    { text: ENVIRONMENTS.staging.displayName, value: "staging" },
+                    { text: ENVIRONMENTS.dev.displayName, value: "dev" },
+                ]}
+                bind:value={environmentGetterSetter.value}
+            />
+        </div>
+    </div>
     <div class="flex flex-row gap-3 items-center justify-between">
         <h2 class="text-md font-bold">Default Lecture Color</h2>
         <div class="flex flex-row gap-2 items-center">

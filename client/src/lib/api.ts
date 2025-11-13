@@ -1,25 +1,46 @@
 import type { UserSettings, isProcessed, ProcessedEvents } from "./types";
+import { EnvironmentManager } from "./environment";
 
 export class API {
-    public static readonly baseUrl = 'https://heron-selected-literally.ngrok-free.app/api';
+    /**
+     * Get the base URL for API calls (includes /api suffix)
+     * @private
+     */
+    private static async getBaseUrl(): Promise<string> {
+        const baseUrl = await EnvironmentManager.getBaseUrl();
+        return `${baseUrl}/api`;
+    }
 
-    public static async getJwtToken() {
-        const result = await chrome.storage.local.get('jwt_token');
-        if (!result.jwt_token) {
-            throw new Error('No JWT token found');
+    /**
+     * Get the base URL for the current environment (public access for direct fetch calls)
+     * @deprecated Use API class methods instead of direct fetch when possible
+     */
+    public static get baseUrl(): Promise<string> {
+        return this.getBaseUrl();
+    }
+
+    /**
+     * Get JWT token for the current environment
+     */
+    public static async getJwtToken(): Promise<string> {
+        const token = await EnvironmentManager.getJwtToken();
+        if (!token) {
+            throw new Error('No JWT token found for current environment');
         }
-        return result.jwt_token;
+        return token;
     }
 
     public static async getTerms() {
-        const response = await fetch(`${this.baseUrl}/terms/current_and_next`, {
+        const baseUrl = await this.getBaseUrl();
+        const response = await fetch(`${baseUrl}/terms/current_and_next`, {
             method: 'GET'
         });
         return response.json();
     }
 
     public static async getUserEmail() {
-        const response = await fetch(`${this.baseUrl}/user/email`, {
+        const baseUrl = await this.getBaseUrl();
+        const response = await fetch(`${baseUrl}/user/email`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${await this.getJwtToken()}`
@@ -29,7 +50,8 @@ export class API {
     }
 
     public static async userSettings(settings?: UserSettings): Promise<UserSettings> {
-        const url = `${this.baseUrl}/user/extension_config`;
+        const baseUrl = await this.getBaseUrl();
+        const url = `${baseUrl}/user/extension_config`;
         const token = await this.getJwtToken();
         const headers: HeadersInit = {
             'Authorization': `Bearer ${token}`
@@ -55,8 +77,9 @@ export class API {
     }
 
     public static async userIsProcessed(termUid: string): Promise<isProcessed> {
+        const baseUrl = await this.getBaseUrl();
         const token = await this.getJwtToken();
-        const response = await fetch(`${this.baseUrl}/user/is_processed`, {
+        const response = await fetch(`${baseUrl}/user/is_processed`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -68,8 +91,9 @@ export class API {
     }
 
     public static async getProcessedEvents(termUid: string): Promise<ProcessedEvents> {
+        const baseUrl = await this.getBaseUrl();
         const token = await this.getJwtToken();
-        const response = await fetch(`${this.baseUrl}/user/processed_events`, {
+        const response = await fetch(`${baseUrl}/user/processed_events`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -81,8 +105,9 @@ export class API {
     }
 
     public static async getIcsUrl(): Promise<{ ics_url: string }> {
+        const baseUrl = await this.getBaseUrl();
         const token = await this.getJwtToken();
-        const response = await fetch(`${this.baseUrl}/user/ics_url`, {
+        const response = await fetch(`${baseUrl}/user/ics_url`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`

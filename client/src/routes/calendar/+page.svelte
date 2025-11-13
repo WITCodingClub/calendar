@@ -236,6 +236,7 @@
 
     async function fetchFromCurrentPage(term: string | undefined): Promise<{ ics_url: string } | undefined> {
         if (!term) return;
+        const baseUrl = await API.baseUrl;
         let tabToUse: any;
         let shouldCloseTab = false;
         try {
@@ -301,7 +302,7 @@
             });
 
             const registrationData = results[0]?.result ?? [];
-            const newData = await fetch(`${API.baseUrl}/process_courses`, {
+            const newData = await fetch(`${baseUrl}/process_courses`, {
                 method: 'POST',
                 body: JSON.stringify(registrationData),
                 headers: {
@@ -365,7 +366,8 @@
     }
 
     async function getEventPerfs(eventId: number) {
-        const res = await fetch(`${API.baseUrl}/meeting_times/${eventId}/preference`, {
+        const baseUrl = await API.baseUrl;
+        const res = await fetch(`${baseUrl}/meeting_times/${eventId}/preference`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${jwt_token}`
@@ -377,10 +379,11 @@
 
     async function refreshAllEventPrefsForCurrentTerm() {
         if (!selected || !jwt_token || !processedData) return;
+        const baseUrl = await API.baseUrl;
         const ids = Array.from(new Set(processedData.flatMap(c => c.meeting_times.map(mt => mt.id))));
         const responses = await Promise.all(ids.map(async (id) => {
             try {
-                const res = await fetch(`${API.baseUrl}/meeting_times/${id}/preference`, {
+                const res = await fetch(`${baseUrl}/meeting_times/${id}/preference`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${jwt_token}` }
                 });
@@ -465,6 +468,7 @@
     }
 
     async function saveEventPerfs() {
+        const baseUrl = await API.baseUrl;
         const event_preference: Partial<{
             title_template: string;
             description_template: string;
@@ -527,7 +531,7 @@
         }
 
         const payload = { event_preference };
-        const put = await fetch(`${API.baseUrl}/meeting_times/${activeMeeting?.id}/preference`, {
+        const put = await fetch(`${baseUrl}/meeting_times/${activeMeeting?.id}/preference`, {
             method: 'PUT',
             body: JSON.stringify(payload),
             headers: {
