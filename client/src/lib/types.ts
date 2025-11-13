@@ -13,6 +13,16 @@ interface Course {
     meeting_times: MeetingTime[];
 }
 
+const FEATUE_FLAGS = [
+    "v1",
+    "v2"
+]
+
+interface FeatureFlagEnabled {
+    feature_name: string;
+    is_enabled: boolean;
+}
+
 interface Location {
     building: Building;
     room: string;
@@ -100,24 +110,24 @@ interface EventPreferences {
 }
 
 interface TemplateVariables {
-    title: string;               
-    course_code: string;         
-    subject: string;             
-    course_number: string;       
-    section_number: string;      
-    crn: string;                 
-    room: string;                
-    building: string;            
-    location: string;            
+    title: string;
+    course_code: string;
+    subject: string;
+    course_number: string;
+    section_number: string;
+    crn: string;
+    room: string;
+    building: string;
+    location: string;
     faculty: string;
-    faculty_email: string;        
+    faculty_email: string;
     all_faculty: string;
-    start_time: string;          
-    end_time: string;            
-    day: string;                 
-    day_abbr: string;            
-    term: string;                
-    schedule_type: string;       
+    start_time: string;
+    end_time: string;
+    day: string;
+    day_abbr: string;
+    term: string;
+    schedule_type: string;
 }
 
 interface ResolvedData {
@@ -158,27 +168,9 @@ interface NotificationSetting {
 }
 
 export {
-  type Building,
-  type Course,
-  type Location,
-  type MeetingTime,
-  type Professor,
-  type ResponseData,
-  type Term,
-  type UserSettings,
-  type CurrentTerm,
-  type NextTerm,
-  type TermResponse,
-  type isProcessed,
-  type ProcessedEvents,
-  type DayItem,
-  type EventPreferences,
-  type ReminderSettings,
-  type GetPreferencesResponse,
-  type Preview,
-  type TemplateVariables,
-  type ResolvedData,
-  type NotificationType,
-  type NotificationSetting,
-  type NotificationMethod
+    FEATUE_FLAGS,
+    type Building,
+    type Course, type CurrentTerm, type DayItem,
+    type EventPreferences, type GetPreferencesResponse, type isProcessed, type Location,
+    type MeetingTime, type NextTerm, type NotificationMethod, type NotificationSetting, type NotificationType, type Preview, type ProcessedEvents, type Professor, type ReminderSettings, type ResolvedData, type ResponseData, type TemplateVariables, type Term, type TermResponse, type UserSettings
 };

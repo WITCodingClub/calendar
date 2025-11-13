@@ -1,59 +1,149 @@
 <script lang="ts">
-    import { Button, SelectOutlined, Switch } from "m3-svelte";
-    import type { UserSettings } from "$lib/types";
+    import { browser } from "$app/environment";
+    import { goto } from "$app/navigation";
     import { API } from "$lib/api";
+    import { EnvironmentManager, ENVIRONMENTS, type Environment } from "$lib/environment";
+    import { processedData as storedProcessedData, userSettings as storedUserSettings } from "$lib/store";
+    import type { UserSettings } from "$lib/types";
+    import { Button, SelectOutlined, snackbar, Switch } from "m3-svelte";
     import { onMount } from "svelte";
-	import { goto } from "$app/navigation";
-    import { userSettings as storedUserSettings } from "$lib/store";
-    import { processedData as storedProcessedData } from "$lib/store";
 
     let userSettings = $state<UserSettings | undefined>(undefined);
     let email = $state<string | undefined>(undefined);
+    let currentEnvironment = $state<Environment>('prod');
+    let authenticatedEnvironments = $state<Environment[]>([]);
 
-    onMount(async () => {
-        userSettings = await API.userSettings();
-		storedUserSettings.set(userSettings);
-        email = await API.getUserEmail().then(data => data.email);
+    $effect(() => {
+        userSettings = $storedUserSettings;
     });
 
+    let previousSettingsWasUndefined = false;
+    $effect(() => {
+        if (previousSettingsWasUndefined && $storedUserSettings !== undefined && browser) {
+            (async () => {
+                try {
+                    email = await API.getUserEmail().then(data => data.email);
+                    currentEnvironment = await EnvironmentManager.getCurrentEnvironment();
+                    authenticatedEnvironments = await EnvironmentManager.getAuthenticatedEnvironments();
+                } catch (error) {
+                    console.error('Failed to refetch email/env after environment switch:', error);
+                }
+            })();
+        }
+        previousSettingsWasUndefined = $storedUserSettings === undefined;
+    });
+
+    onMount(async () => {
+        await EnvironmentManager.migrateOldJwtToken();
+
+        try {
+            userSettings = await API.userSettings();
+            storedUserSettings.set(userSettings);
+            email = await API.getUserEmail().then(data => data.email);
+        } catch (error) {
+            console.error('Failed to load settings:', error);
+        }
+
+        currentEnvironment = await EnvironmentManager.getCurrentEnvironment();
+        authenticatedEnvironments = await EnvironmentManager.getAuthenticatedEnvironments();
+    });
+
+    let defaultColorLecture = $derived(userSettings?.default_color_lecture ?? "");
+    let defaultColorLab = $derived(userSettings?.default_color_lab ?? "");
+    let militaryTimeValue = $derived(userSettings?.military_time ? "true" : "false");
+    let advancedEditingValue = $derived(userSettings?.advanced_editing ?? false);
+
     const defaultColorLectureGetterSetter = {
-        get value() { return userSettings?.default_color_lecture ?? ""; },
+        get value() { return defaultColorLecture; },
 		set value(value: string) {
 			if (!userSettings) return;
-			userSettings.default_color_lecture = value;
+			userSettings = { ...userSettings, default_color_lecture: value };
 			storedUserSettings.set(userSettings);
 			API.userSettings(userSettings);
+			clearStoredColors();
 		}
     }
 
     const militaryTimeGetterSetter = {
-        get value() { return userSettings?.military_time ? "true" : "false"; },
+        get value() { return militaryTimeValue; },
 		set value(value: string) {
 			if (!userSettings) return;
-			userSettings.military_time = value === "true";
+			userSettings = { ...userSettings, military_time: value === "true" };
 			storedUserSettings.set(userSettings);
 			API.userSettings(userSettings);
 		}
     }
 
     const defaultColorLabGetterSetter = {
-        get value() { return userSettings?.default_color_lab ?? ""; },
+        get value() { return defaultColorLab; },
 		set value(value: string) {
 			if (!userSettings) return;
-			userSettings.default_color_lab = value;
+			userSettings = { ...userSettings, default_color_lab: value };
+			storedUserSettings.set(userSettings);
+			API.userSettings(userSettings);
+			clearStoredColors();
+		}
+    }
+
+    const advancedEditingGetterSetter = {
+        get value() { return advancedEditingValue; },
+		set value(value: boolean) {
+			if (!userSettings) return;
+			userSettings = { ...userSettings, advanced_editing: value };
 			storedUserSettings.set(userSettings);
 			API.userSettings(userSettings);
 		}
     }
 
-    const advancedEditingGetterSetter = {
-        get value() { return userSettings?.advanced_editing ?? false; },
-		set value(value: boolean) {
-			if (!userSettings) return;
-			userSettings.advanced_editing = value;
-			storedUserSettings.set(userSettings);
-			API.userSettings(userSettings);
-		}
+    function clearStoredColors() {
+        storedProcessedData.update((list) => {
+            return list.map((termData) => ({
+                ...termData,
+                responseData: {
+                    ...termData.responseData,
+                    classes: termData.responseData.classes.map((course) => ({
+                        ...course,
+                        meeting_times: course.meeting_times.map((meeting) => {
+                            const { color, ...meetingWithoutColor } = meeting;
+                            return meetingWithoutColor;
+                        })
+                    }))
+                }
+            }));
+        });
+    }
+
+    async function switchEnvironment(newEnv: Environment) {
+        if (newEnv === currentEnvironment) return;
+
+        const hasJwt = await EnvironmentManager.switchEnvironment(newEnv);
+        currentEnvironment = newEnv;
+
+        storedUserSettings.set(undefined);
+        storedProcessedData.set([]);
+
+        if (browser) {
+            sessionStorage.setItem('returnToSettings', 'true');
+            sessionStorage.setItem('clearCalendarData', 'true');
+        }
+
+        const envDisplayName = ENVIRONMENTS[newEnv].displayName;
+
+        if (!hasJwt) {
+            storedProcessedData.set([]);
+            snackbar(`Switched to ${envDisplayName}. Please sign in.`, undefined, true);
+            await goto('/');
+        } else {
+            snackbar(`Switched to ${envDisplayName}`, undefined, true);
+            await goto('/calendar');
+        }
+    }
+
+    const environmentGetterSetter = {
+        get value() { return currentEnvironment; },
+        set value(value: string) {
+            switchEnvironment(value as Environment);
+        }
     }
 
     async function clearLocalStorage() {
@@ -62,6 +152,7 @@
         sessionStorage.clear();
         storedUserSettings.set(undefined);
         storedProcessedData.set([]);
+        snackbar('Local data cleared successfully', undefined, true);
         await goto('/');
     }
 </script>
@@ -69,6 +160,31 @@
 <h1 class="text-lg font-bold">Currently signed in as: {email}</h1>
 
 <div class="flex flex-col gap-3">
+    <div class="flex flex-row gap-3 items-center justify-between">
+        <div class="flex flex-col">
+            <h2 class="text-md font-bold">Environment</h2>
+            <p class="text-sm text-outline">
+                {#each Object.values(ENVIRONMENTS) as env}
+                    {#if authenticatedEnvironments.includes(env.name)}
+                        <span class="text-primary">✓ {env.displayName}</span>
+                    {:else}
+                        <span class="text-outline-variant">○ {env.displayName}</span>
+                    {/if}
+                    {#if env.name !== 'prod'}&nbsp;&nbsp;{/if}
+                {/each}
+            </p>
+        </div>
+        <div class="flex flex-row gap-2 items-center">
+            <SelectOutlined label=""
+                options={[
+                    { text: ENVIRONMENTS.prod.displayName, value: "prod" },
+                    { text: ENVIRONMENTS.staging.displayName, value: "staging" },
+                    { text: ENVIRONMENTS.dev.displayName, value: "dev" },
+                ]}
+                bind:value={environmentGetterSetter.value}
+            />
+        </div>
+    </div>
     <div class="flex flex-row gap-3 items-center justify-between">
         <h2 class="text-md font-bold">Default Lecture Color</h2>
         <div class="flex flex-row gap-2 items-center">

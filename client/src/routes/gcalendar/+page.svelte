@@ -50,9 +50,10 @@
     }
 
     async function submitEmail() {
-        const emailToUse = emailToSignInWith || emailToSubmit; 
-        
-        const response = await fetch(`${API.baseUrl}/user/gcal`, {
+        const emailToUse = emailToSignInWith || emailToSubmit;
+        const baseUrl = await API.baseUrl;
+
+        const response = await fetch(`${baseUrl}/user/gcal`, {
             method: 'POST',
             body: JSON.stringify({email: emailToUse}),
             headers: {
@@ -89,6 +90,11 @@
     onMount(async () => {
         checkBetaAccess();
         jwt_token = await API.getJwtToken();
+        if (!jwt_token) {
+            // No JWT token for current environment, redirect to welcome page
+            goto('/');
+            return;
+        }
         checkGcalStatus();
         tryForEmail();
         setupListener();
