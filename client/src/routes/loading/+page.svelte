@@ -3,12 +3,15 @@
     import { API } from '$lib/api';
     import { Button, LoadingIndicator, snackbar } from 'm3-svelte';
     import { onMount } from 'svelte';
+    import { EnvironmentManager } from '$lib/environment';
 
     let schoolEmail = $state('');
     let preferredName = $state('');
     let error = $state<string | null>(null);
 
-    onMount(() => {
+    onMount(async () => {
+        // Migrate old JWT token format if needed
+        await EnvironmentManager.migrateOldJwtToken();
         fetchSchoolEmail();
     });
 
@@ -111,7 +114,8 @@
 
     async function signIn() {
         try {
-            const response = await fetch(`${API.baseUrl}/user/onboard`, {
+            const baseUrl = await API.baseUrl;
+            const response = await fetch(`${baseUrl}/user/onboard`, {
                 method: 'POST',
                 body: JSON.stringify({email: schoolEmail, preferred_name: preferredName}),
                 headers: {
@@ -129,9 +133,7 @@
 
             if (response.ok) {
                 if (data.jwt) {
-                    await chrome.storage.local.set({
-                        jwt_token: data.jwt,
-                    });
+                    await EnvironmentManager.setJwtToken(data.jwt);
                 }
             } else {
                 throw new Error(data.message || 'Server is (probably) down! Please email mayonej@wit.edu!');
