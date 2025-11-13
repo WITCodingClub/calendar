@@ -10,7 +10,7 @@ export const ENVIRONMENTS: Record<Environment, EnvironmentConfig> = {
     dev: {
         name: 'dev',
         displayName: 'Development',
-        baseUrl: 'https://dev-calendar.witcc.dev'
+        baseUrl: 'https://heron-selected-literally.ngrok-free.app'
     },
     staging: {
         name: 'staging',

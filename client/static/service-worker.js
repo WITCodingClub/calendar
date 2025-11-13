@@ -2,7 +2,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
     // Check if the URL matches any environment's OAuth success page
     const oauthSuccessPatterns = [
-      'https://dev-calendar.witcc.dev/oauth/success',
+      'https://heron-selected-literally.ngrok-free.app/oauth/success',
       'https://staging-calendar.witcc.dev/oauth/success',
       'https://server-calendar.witcc.dev/oauth/success'
     ];

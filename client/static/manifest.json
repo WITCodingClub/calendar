@@ -30,6 +30,7 @@
   },
   "host_permissions": [
     "https://selfservice.wit.edu/*",
-    "https://*.witcc.dev/*"
+    "https://*.witcc.dev/*",
+    "https://*.ngrok-free.app/*"
   ]
 }
