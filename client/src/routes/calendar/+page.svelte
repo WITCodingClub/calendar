@@ -139,7 +139,7 @@
             activeCourse = undefined;
             activeMeeting = undefined;
             activeDay = undefined;
-            notifications = [{ time: "30", type: "minutes", method: "notification" }];
+            notifications = [];
             courseColor = "#d50000";
             currentEventPrefs = undefined;
             editTitle = "";
@@ -496,8 +496,22 @@
             event_preference.color_id = courseColor;
         }
 
+        // Deduplicate notifications (preserve first occurrence, keep order)
+        const dedupedNotifications: NotificationSetting[] = (() => {
+            const seen = new Set<string>();
+            const out: NotificationSetting[] = [];
+            for (const n of notifications) {
+                const key = `${n.method}|${String(n.time)}|${n.type}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    out.push(n);
+                }
+            }
+            return out;
+        })();
+
         //@ts-ignore
-        const convertedNotifications: ReminderSettings[] = notifications.map(n => ({
+        const convertedNotifications: ReminderSettings[] = dedupedNotifications.map(n => ({
             time: (n.time).toString(),
             type: n.type,
             method: n.method
@@ -520,7 +534,7 @@
             editDescriptionManual = "";
             editLocationManual = "";
             courseColor = "#d50000";
-            notifications = [{ time: "30", type: "minutes", method: "notification" }];
+            notifications = [];
             editMode = false;
             snackbar('No changes made!', undefined, true);
             return;
@@ -547,7 +561,7 @@
             editDescriptionManual = "";
             editLocationManual = "";
             courseColor = "#d50000";
-            notifications = [{ time: "30", type: "minutes", method: "notification" }];
+            notifications = [];
             editMode = false;
             snackbar('Failed to save event preferences: ' + put.statusText, undefined, true);
         } else {
@@ -621,14 +635,14 @@
             editDescriptionManual = "";
             editLocationManual = "";
             courseColor = "#d50000";
-            notifications = [{ time: "30", type: "minutes", method: "notification" }];
+            notifications = [];
             editMode = false;
         }
     }
 
     let tab = $state("a");
 
-    let notifications = $state<NotificationSetting[]>([{ time: "30", type: "minutes", method: "notification" }]);
+    let notifications = $state<NotificationSetting[]>([]);
     let courseColor = $state("#d50000");
     let editTitle = $state("");
     let editDescription = $state("");
@@ -687,8 +701,6 @@
                     type: r.type,
                     method: r.method as NotificationMethod
                 }));
-            } else {
-                notifications = [{ time: "30", type: "minutes", method: "notification" }];
             }
         }
     });
@@ -841,7 +853,7 @@
                     e.stopPropagation();
                     return;
                 }
-                activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;
+                activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = []; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;
             }}
             onkeydown={(e) => {
                 // support keyboard activation for the scrim (Enter / Space)
@@ -852,7 +864,7 @@
                         e.stopPropagation();
                         return;
                     }
-                    activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;
+                    activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = []; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;
                 }
             }}
         >
@@ -873,7 +885,7 @@
                             <h1 class="text-2xl font-bold">Edit Calendar Event</h1>
                             <Chip selected={editMode} variant="input" onclick={() => {editMode = !editMode}}>Edit Manually</Chip>
                             <div class="tailwindcss flex flex-row items-center space-between absolute right-4">
-                                <Button variant="tonal" onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = [{ time: "30", type: "minutes", method: "notification" }]; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;}}>
+                                <Button variant="tonal" onclick={() => {activeCourse = undefined; activeMeeting = undefined; activeDay = undefined; notifications = []; courseColor = "#d50000"; currentEventPrefs = undefined; editTitle = ""; editDescription = ""; editLocation = ""; editTitleManual = ""; editDescriptionManual = ""; editLocationManual = ""; editMode = false;}}>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"/></svg>
                                 </Button>
                             </div>
