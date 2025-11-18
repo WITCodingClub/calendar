@@ -654,6 +654,37 @@
     let editDescriptionManual = $state("");
     let editLocationManual = $state("");
 
+    async function listenforEnvironmentChanges() {
+        chrome.storage.onChanged.addListener((changes: any) => {
+            Object.entries(changes).forEach(async ([key]) => {
+                if (key === 'environment_data') {
+                    checkBetaAccess();
+                    jwt_token = await API.getJwtToken();
+                    if (!jwt_token) {
+                        // No JWT token for current environment, redirect to welcome page
+                        goto('/');
+                        return;
+                    }
+
+                    // IMPORTANT: Clear data FIRST before fetching anything for environment switches
+                    if (shouldClearData) {
+                        // Clear stored data to force refetch for new environment
+                        storedProcessedData.set([]);
+                        storedUserSettings.set(undefined);
+                        storedIcsUrl.set(undefined);
+                        attemptedTerms = new Set();
+                        refreshedTerms = new Set();
+                    }
+
+                    // Now fetch fresh data for the current environment
+                    terms = await API.getTerms();
+                    storedUserSettings.set(await API.userSettings());
+                    otherCalUser = checkIsOtherCalendar();
+                }
+            });
+        });
+    }
+
     onMount(async () => {
         checkBetaAccess();
         jwt_token = await API.getJwtToken();
@@ -677,6 +708,7 @@
         terms = await API.getTerms();
         storedUserSettings.set(await API.userSettings());
         otherCalUser = checkIsOtherCalendar();
+        listenforEnvironmentChanges();
     });
 
     $effect(() => {
