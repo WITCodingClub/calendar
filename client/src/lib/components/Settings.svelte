@@ -116,11 +116,8 @@
     async function switchEnvironment(newEnv: Environment) {
         if (newEnv === currentEnvironment) return;
 
-        const hasJwt = await EnvironmentManager.switchEnvironment(newEnv);
         currentEnvironment = newEnv;
-
-        storedUserSettings.set(undefined);
-        storedProcessedData.set([]);
+        const hasJwt = await EnvironmentManager.switchEnvironment(newEnv);
 
         if (browser) {
             sessionStorage.setItem('returnToSettings', 'true');
@@ -133,9 +130,6 @@
             storedProcessedData.set([]);
             snackbar(`Switched to ${envDisplayName}. Please sign in.`, undefined, true);
             await goto('/');
-        } else {
-            snackbar(`Switched to ${envDisplayName}`, undefined, true);
-            await goto('/calendar');
         }
     }
 
