@@ -8,7 +8,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory", "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory", "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/reset?term=", "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=", "https://selfservice.wit.edu/BannerGeneralSsb/ssb/PersonalInformationDetails/getEmails"],
       "js": ["scripts/init.js"]
     }
   ],
@@ -30,6 +30,6 @@
   },
   "host_permissions": [
     "https://selfservice.wit.edu/*",
-    "https://heron-selected-literally.ngrok-free.app/*"
+    "https://server-calendar.witcc.dev/*"
   ]
 }
