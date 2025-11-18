@@ -34,7 +34,7 @@
     let editMode = $state(false);
 
     let titleTemplates = [
-        "{{title}}",
+        "{% if schedule_type == 'Laboratory' %}{{title | remove: '- Lab'}} - {{schedule_type_short}}{% else %}{{title}}{% endif %}",
         "{% if schedule_type == 'Laboratory' %}{{course_code}}{% else %}{{title}} - {{schedule_type_short}}{% endif %}"
     ]
     let descriptionTemplates = [
@@ -80,7 +80,7 @@
 		}
 		const result: string[] = [];
 		let lastIndex = 0;
-		const regex = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
+        const regex = /\{\{\s*([a-zA-Z0-9_]+)(?:\s*\|\s*remove:\s*(["'])(.*?)\2)?\s*\}\}/g;
 		let m: RegExpExecArray | null;
 		while ((m = regex.exec(s)) !== null) {
 			if (m.index > lastIndex) {
@@ -88,6 +88,9 @@
 			}
 			const key = m[1] as keyof TemplateVariables;
 			let value = templates?.[key] ?? '';
+            if (m[3]) {
+                value = value.replaceAll(m[3], '');
+            }
 			result.push(value);
 			lastIndex = regex.lastIndex;
 		}
