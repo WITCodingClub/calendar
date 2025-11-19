@@ -239,6 +239,7 @@
 
     async function fetchFromCurrentPage(term: string | undefined): Promise<{ ics_url: string } | undefined> {
         if (!term) return;
+        const baseUrl = await API.baseUrl;
         let tabToUse: any;
         let shouldCloseTab = false;
         try {
@@ -304,7 +305,7 @@
             });
 
             const registrationData = results[0]?.result ?? [];
-            const newData = await fetch(`${API.baseUrl}/process_courses`, {
+            const newData = await fetch(`${baseUrl}/process_courses`, {
                 method: 'POST',
                 body: JSON.stringify(registrationData),
                 headers: {
@@ -368,7 +369,8 @@
     }
 
     async function getEventPerfs(eventId: number) {
-        const res = await fetch(`${API.baseUrl}/meeting_times/${eventId}/preference`, {
+        const baseUrl = await API.baseUrl;
+        const res = await fetch(`${baseUrl}/meeting_times/${eventId}/preference`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${jwt_token}`
@@ -380,10 +382,11 @@
 
     async function refreshAllEventPrefsForCurrentTerm() {
         if (!selected || !jwt_token || !processedData) return;
+        const baseUrl = await API.baseUrl;
         const ids = Array.from(new Set(processedData.flatMap(c => c.meeting_times.map(mt => mt.id))));
         const responses = await Promise.all(ids.map(async (id) => {
             try {
-                const res = await fetch(`${API.baseUrl}/meeting_times/${id}/preference`, {
+                const res = await fetch(`${baseUrl}/meeting_times/${id}/preference`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${jwt_token}` }
                 });
@@ -468,6 +471,7 @@
     }
 
     async function saveEventPerfs() {
+        const baseUrl = await API.baseUrl;
         const event_preference: Partial<{
             title_template: string;
             description_template: string;
@@ -530,7 +534,7 @@
         }
 
         const payload = { event_preference };
-        const put = await fetch(`${API.baseUrl}/meeting_times/${activeMeeting?.id}/preference`, {
+        const put = await fetch(`${baseUrl}/meeting_times/${activeMeeting?.id}/preference`, {
             method: 'PUT',
             body: JSON.stringify(payload),
             headers: {
@@ -629,7 +633,20 @@
         }
     }
 
-    let tab = $state("a");
+    // Check if returning to settings after environment switch (before render)
+    let shouldReturnToSettings = browser && sessionStorage.getItem('returnToSettings') === 'true';
+    let shouldClearData = browser && sessionStorage.getItem('clearCalendarData') === 'true';
+    let tab = $state(shouldReturnToSettings ? "settings" : "a");
+
+    // Clear data immediately if switching environments (before render)
+    if (shouldClearData && browser) {
+        sessionStorage.removeItem('returnToSettings');
+        sessionStorage.removeItem('clearCalendarData');
+        // Clear stores immediately to prevent old data from showing
+        localStorage.removeItem('processedData');
+        localStorage.removeItem('userSettings');
+        localStorage.removeItem('icsUrl');
+    }
 
     let notifications = $state<NotificationSetting[]>([]);
     let courseColor = $state("#d50000");
@@ -640,12 +657,61 @@
     let editDescriptionManual = $state("");
     let editLocationManual = $state("");
 
+    async function listenforEnvironmentChanges() {
+        chrome.storage.onChanged.addListener((changes: any) => {
+            Object.entries(changes).forEach(async ([key]) => {
+                if (key === 'environment_data') {
+                    checkBetaAccess();
+                    jwt_token = await API.getJwtToken();
+                    if (!jwt_token) {
+                        // No JWT token for current environment, redirect to welcome page
+                        goto('/');
+                        return;
+                    }
+
+                    // IMPORTANT: Clear data FIRST before fetching anything for environment switches
+                    if (shouldClearData) {
+                        // Clear stored data to force refetch for new environment
+                        storedProcessedData.set([]);
+                        storedUserSettings.set(undefined);
+                        storedIcsUrl.set(undefined);
+                        attemptedTerms = new Set();
+                        refreshedTerms = new Set();
+                    }
+
+                    // Now fetch fresh data for the current environment
+                    terms = await API.getTerms();
+                    storedUserSettings.set(await API.userSettings());
+                    otherCalUser = checkIsOtherCalendar();
+                }
+            });
+        });
+    }
+
     onMount(async () => {
         checkBetaAccess();
         jwt_token = await API.getJwtToken();
+        if (!jwt_token) {
+            // No JWT token for current environment, redirect to welcome page
+            goto('/');
+            return;
+        }
+
+        // IMPORTANT: Clear data FIRST before fetching anything for environment switches
+        if (shouldClearData) {
+            // Clear stored data to force refetch for new environment
+            storedProcessedData.set([]);
+            storedUserSettings.set(undefined);
+            storedIcsUrl.set(undefined);
+            attemptedTerms = new Set();
+            refreshedTerms = new Set();
+        }
+
+        // Now fetch fresh data for the current environment
         terms = await API.getTerms();
         storedUserSettings.set(await API.userSettings());
         otherCalUser = checkIsOtherCalendar();
+        listenforEnvironmentChanges();
     });
 
     $effect(() => {
@@ -698,7 +764,7 @@
 </script>
 
 <div class="flex flex-col gap-4 justify-center items-center h-full mt-4 w-full px-3">
-    {#if !processedData}
+    {#if !processedData && tab === "a"}
         <div class="w-full flex flex-col items-center gap-6 p-6 bg-surface-container-lowest rounded-md shadow-md border border-outline-variant max-w-lg mx-auto">
             <div class="flex flex-col gap-1 items-center">
                 <h1 class="text-xl font-bold text-primary text-center mb-1">Get Your Calendar</h1>
@@ -724,7 +790,7 @@
                 {/if}
             </div>
         </div>
-    {:else}
+    {:else if processedData || tab !== "a"}
         <div>
             <div class="flex flex-col gap-1 items-center">
                 <h1 class="text-xl font-bold text-primary text-center mb-1">Your Calendar</h1>
@@ -742,7 +808,7 @@
             <VariableTabs secondary={true}
                 items={[
                     { name: "Calendar", value: "a" },
-                    { name: "Settings", value: "settings" }, 
+                    { name: "Settings", value: "settings" },
                     { name: "Help", value: "help" },
                 ]}
                 bind:tab
@@ -759,10 +825,9 @@
         {/if}
     {/if}
 
-    {#if tab === "a"}
-        {#if processedData}
-            {@const latestHour = getLatestEndHour(processedData)}
-            {@const numHours = latestHour - 8 + 1}
+    {#if tab === "a" && processedData}
+        {@const latestHour = getLatestEndHour(processedData)}
+        {@const numHours = latestHour - 8 + 1}
             <div class="flex flex-col w-full h-full overflow-hidden">
                 <div class="flex-1 overflow-x-auto overflow-y-hidden">
                     <div class="inline-flex flex-col min-w-full h-full">
@@ -820,8 +885,7 @@
                     </div>
                 </div>
             </div>
-        {/if}
-        {:else if tab === "settings"}
+    {:else if tab === "settings"}
             <Settings />
         {:else if tab === "help"}
             <Help />
