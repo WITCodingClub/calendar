@@ -123,6 +123,12 @@
                 }
             });
 
+            if (!response.ok) {
+                const responseText = await response.text();
+                console.error('Sign in error response:', responseText);
+                throw new Error(`Server returned ${response.status}`);
+            }
+
             const data = await response.json() as { jwt?: string; message?: string; error?: string; beta_access?: boolean };
 
             if (data && data.beta_access === false) {
@@ -131,17 +137,14 @@
                 return Promise.reject(new Error('Beta access denied')) as never;
             }
 
-            if (response.ok) {
-                if (data.jwt) {
-                    await EnvironmentManager.setJwtToken(data.jwt);
-                }
-            } else {
-                throw new Error(data.message || 'Server is (probably) down! Please email mayonej@wit.edu!');
+            if (data.jwt) {
+                await EnvironmentManager.setJwtToken(data.jwt);
             }
 
             await new Promise(resolve => setTimeout(resolve, 1500));
             goto('/onboard');
         } catch (err) {
+            console.error('Sign in error:', err);
             error = 'Server is (probably) down! Please email mayonej@wit.edu! Also, make';
             snackbar('Failed to sign in: ' + err, undefined, true);
         }
