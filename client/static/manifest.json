@@ -30,7 +30,6 @@
   },
   "host_permissions": [
     "https://selfservice.wit.edu/*",
-    "https://cas.wit.edu/*",
     "https://*.witcc.dev/*",
     "https://heron-selected-literally.ngrok-free.app/*"
   ]
