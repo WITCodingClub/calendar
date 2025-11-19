@@ -15,7 +15,8 @@ interface Course {
 
 const FEATUE_FLAGS = [
     "v1",
-    "v2"
+    "v2",
+    "env_switcher"
 ]
 
 interface FeatureFlagEnabled {
