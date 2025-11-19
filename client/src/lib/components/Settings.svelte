@@ -14,6 +14,7 @@
     let currentEnvironment = $state<Environment>('prod');
     let authenticatedEnvironments = $state<Environment[]>([]);
     let showEnvSwitcher = $state<boolean>(false);
+    let showClearDataButton = $state<boolean>(false);
 
     $effect(() => {
         userSettings = $storedUserSettings;
@@ -30,6 +31,7 @@
                     // Reload feature flags after environment switch
                     await featureFlags.reload();
                     showEnvSwitcher = featureFlags.isEnabledSync('env_switcher');
+                    showClearDataButton = featureFlags.isEnabledSync('debug_mode');
                 } catch (error) {
                     console.error('Failed to refetch email/env after environment switch:', error);
                 }
@@ -53,6 +55,7 @@
             storedUserSettings.set(userSettings);
             email = emailData.email;
             showEnvSwitcher = featureFlags.isEnabledSync('env_switcher');
+            showClearDataButton = featureFlags.isEnabledSync('debug_mode');
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
@@ -258,6 +261,7 @@
             </label>
         </div>
     </div>
+    {#if showClearDataButton}
     <div class="flex flex-col gap-2 items-center justify-center mt-6 w-full">
         <Button variant="filled" onclick={clearLocalStorage}>Clear Local Data</Button>
         <p class="text-sm text-error text-center max-w-md">
@@ -265,4 +269,5 @@
             This will clear all your local data and you will need to sign in again. This does <b>not</b> affect your Calendar data.
         </p>
     </div>
+    {/if}
 </div>
