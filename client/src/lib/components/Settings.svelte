@@ -15,6 +15,7 @@
     let authenticatedEnvironments = $state<Environment[]>([]);
     let showEnvSwitcher = $state<boolean>(false);
     let showClearDataButton = $state<boolean>(false);
+    let isRefreshingFlags = $state<boolean>(false);
 
     $effect(() => {
         userSettings = $storedUserSettings;
@@ -30,8 +31,8 @@
                     authenticatedEnvironments = await EnvironmentManager.getAuthenticatedEnvironments();
                     // Reload feature flags after environment switch
                     await featureFlags.reload();
-                    showEnvSwitcher = featureFlags.isEnabledSync('env_switcher');
-                    showClearDataButton = featureFlags.isEnabledSync('debug_mode');
+                    showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
+                    showClearDataButton = featureFlags.isEnabledSync('debugMode');
                 } catch (error) {
                     console.error('Failed to refetch email/env after environment switch:', error);
                 }
@@ -54,14 +55,44 @@
             userSettings = userSettingsData;
             storedUserSettings.set(userSettings);
             email = emailData.email;
-            showEnvSwitcher = featureFlags.isEnabledSync('env_switcher');
-            showClearDataButton = featureFlags.isEnabledSync('debug_mode');
+            showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
+            showClearDataButton = featureFlags.isEnabledSync('debugMode');
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
 
         currentEnvironment = await EnvironmentManager.getCurrentEnvironment();
         authenticatedEnvironments = await EnvironmentManager.getAuthenticatedEnvironments();
+
+        // Multiple event handlers to catch different scenarios
+        const reloadFlags = async () => {
+            await featureFlags.reload();
+            showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
+            showClearDataButton = featureFlags.isEnabledSync('debugMode');
+        };
+
+        // 1. Window focus (when clicking back to the extension)
+        window.addEventListener('focus', reloadFlags);
+
+        // 2. Visibility change (when tab becomes visible)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                reloadFlags();
+            }
+        });
+
+        // 3. Periodic check every 30 seconds while page is visible
+        const pollInterval = setInterval(() => {
+            if (!document.hidden) {
+                reloadFlags();
+            }
+        }, 30000);
+
+        return () => {
+            window.removeEventListener('focus', reloadFlags);
+            document.removeEventListener('visibilitychange', reloadFlags);
+            clearInterval(pollInterval);
+        };
     });
 
     let defaultColorLecture = $derived(userSettings?.default_color_lecture ?? "");
@@ -165,9 +196,27 @@
         snackbar('Local data cleared successfully', undefined, true);
         await goto('/');
     }
+
+    async function manualRefreshFeatureFlags() {
+        isRefreshingFlags = true;
+        try {
+            featureFlags.clearCache();
+            await featureFlags.reload();
+            showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
+            showClearDataButton = featureFlags.isEnabledSync('debugMode');
+            snackbar('Feature flags refreshed!', undefined, true);
+        } finally {
+            isRefreshingFlags = false;
+        }
+    }
 </script>
 
-<h1 class="text-lg font-bold">Currently signed in as: {email}</h1>
+<div class="flex flex-row items-center justify-between mb-4">
+    <h1 class="text-lg font-bold">Currently signed in as: {email}</h1>
+    <Button variant="tonal" onclick={manualRefreshFeatureFlags} disabled={isRefreshingFlags}>
+        {isRefreshingFlags ? 'Refreshing...' : 'Refresh Flags'}
+    </Button>
+</div>
 
 <div class="flex flex-col gap-3">
     {#if showEnvSwitcher}

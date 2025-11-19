@@ -19,12 +19,16 @@ export class API {
     public static async checkFeatureFlag(flagName:string) {
         const baseUrl = await this.getBaseUrl();
         const token = await this.getJwtToken();
-        const response = await fetch(`${baseUrl}/feature_flags/${flagName}`, {
+        const response = await fetch(`${baseUrl}/user/flag_enabled?flag_name=${flagName}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
+
+        if (!response.ok) {
+            console.error(`Feature flag API error for ${flagName}:`, response.status, response.statusText);
+        }
 
         const data = await response.json();
         return data.is_enabled;
