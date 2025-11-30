@@ -7,9 +7,9 @@
 </h3>
 
 <p align="center">
-    <a href="https://calendar.witcc.dev" target="_blank" rel="noopener">website</a> · <a href="https://chromewebstore.google.com/detail/wit-calendar/aceelinogfcceklkpacakdeddnaakicj" target="_blank" rel="noopener">install</a>
+    <a href="https://calendar.witcc.dev">website</a> · <a href="https://chromewebstore.google.com/detail/wit-calendar/aceelinogfcceklkpacakdeddnaakicj">install</a>
     <br>
-    (opens in a new tab)
+    (middle-click or ctrl/cmd+click to open in a new tab)
 </p>
 
 ## Description
