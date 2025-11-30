@@ -7,7 +7,7 @@
 </h3>
 
 <p align="center">
-    <a href="https://calendar.witcc.dev" target="_blank">website</a> · <a href="https://chromewebstore.google.com/detail/wit-calendar/aceelinogfcceklkpacakdeddnaakicj" target="_blank">install</a>
+    <a href="https://calendar.witcc.dev" target="_blank" rel="noopener noreferrer">website</a> · <a href="https://chromewebstore.google.com/detail/wit-calendar/aceelinogfcceklkpacakdeddnaakicj" target="_blank" rel="noopener noreferrer">install</a>
 </p>
 
 <p align="center">
