@@ -7,11 +7,13 @@
 </h3>
 
 <p align="center">
-    <a href="https://calendar.witcc.dev">website</a> · <a href="https://chromewebstore.google.com/detail/wit-calendar/aceelinogfcceklkpacakdeddnaakicj">install</a>
+    <a href="https://calendar.witcc.dev" target="_blank">website</a> · <a href="https://chromewebstore.google.com/detail/wit-calendar/aceelinogfcceklkpacakdeddnaakicj" target="_blank">install</a>
 </p>
 
 <p align="center">
-    WIT-Calendar is a Chrome extension that makes adding your classes to your calendar easy & quick! In the future, you will also be able to find "best times" to meet with fellow students, easily register for classes, and more!
+    WIT-Calendar is a Chrome extension that makes adding your classes to your calendar easy & quick!
+    It supports all major calendars, including Google Calendar, Microsoft Outlook, and Apple Calendar.
+    In the future, you will also be able to find "best times" to meet with fellow students, easily register for classes, and more!
 </p>
 
 ## How does it work?
