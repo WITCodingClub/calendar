@@ -8,16 +8,14 @@
 
 <p align="center">
     <a href="https://calendar.witcc.dev">website</a> · <a href="https://chromewebstore.google.com/detail/wit-calendar/aceelinogfcceklkpacakdeddnaakicj">install</a>
+    <br>
+    (middle-click or ctrl/cmd+click to open in a new tab)
 </p>
-(middle-click or ctrl/cmd+click to open in a new tab)
 
-<p align="center">
-    WIT-Calendar is a Chrome extension that makes adding your classes to your calendar easy & quick!
-    <br>
-    It supports all major calendars, including Google Calendar, Microsoft Outlook, and Apple Calendar.
-    <br>
-    In the future, you will also be able to find "best times" to meet with fellow students, easily register for classes, and more!
-</p>
+## Description
+WIT-Calendar is a Chrome extension that makes adding your classes to your calendar easy & quick!
+It supports all major calendars, including Google Calendar, Microsoft Outlook, and Apple Calendar.
+In the future, you will also be able to find "best times" to meet with fellow students, easily register for classes, and more!
 
 ## How does it work?
 The Chrome extension gets your schedule, processes it, and then provides you with a calendar link. You can also optionally connect your Google account for automatic updates to your Google Calendar.
