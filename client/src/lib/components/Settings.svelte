@@ -213,9 +213,6 @@
 
 <div class="flex flex-row items-center justify-between mb-4">
     <h1 class="text-lg font-bold">Currently signed in as: {email}</h1>
-    <Button variant="tonal" onclick={manualRefreshFeatureFlags} disabled={isRefreshingFlags}>
-        {isRefreshingFlags ? 'Refreshing...' : 'Refresh Flags'}
-    </Button>
 </div>
 
 <div class="flex flex-col gap-3">
@@ -309,6 +306,11 @@
                 <Switch bind:checked={advancedEditingGetterSetter.value} />
             </label>
         </div>
+    </div>
+    <div class="flex flex-col gap-2 items-center justify-center mt-6 w-full">
+        <Button variant="tonal" onclick={manualRefreshFeatureFlags} disabled={isRefreshingFlags}>
+            {isRefreshingFlags ? 'Refreshing...' : 'Refresh Flags'}
+        </Button>
     </div>
     {#if showClearDataButton}
     <div class="flex flex-col gap-2 items-center justify-center mt-6 w-full">
