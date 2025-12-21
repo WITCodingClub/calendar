@@ -7,7 +7,7 @@
 </h3>
 
 <p align="center">
-    <a href="https://calendar.witcc.dev">website</a> · <a href="https://chromewebstore.google.com/detail/wit-calendar/aceelinogfcceklkpacakdeddnaakicj">install</a>
+    <a href="https://calendar.witcc.dev">website</a> · <a href="https://chromewebstore.google.com/detail/wit-calendar/aceelinogfcceklkpacakdeddnaakicj">install</a> · <a href="https://stats.uptimerobot.com/QS76oPqfzz">status page</a>
     <br>
     (middle-click or ctrl/cmd+click to open in a new tab)
 </p>
@@ -26,5 +26,6 @@ You can also manage event alerts, colors, and titles from within the extension.
 - See instructions for developing the extension [here](https://github.com/WITCodingClub/calendar/blob/main/client/README.md).
 
 - See instructions for developing the backend [here](https://github.com/WITCodingClub/calendar-backend/blob/main/README.md).
+
 
 
