@@ -771,6 +771,10 @@
                 <p class="text-md text-secondary text-center">
                     Click the button below to fetch your classes and generate your calendar.
                     If you've linked your Google Calendar, your events will be added there as well!
+                    <br><br>
+                    If clicking the button below doesn't work, the server may be down.
+                    Please check the <a class="text-primary underline hover:text-primary-container" href="https://stats.uptimerobot.com/QS76oPqfzz" target="_blank">status page</a> for updates.
+                    If the issue persists, please submit a bug report on <a class="text-primary underline hover:text-primary-container" href="https://github.com/WITCodingClub/calendar-backend/issues" target="_blank">GitHub</a>.
                 </p>
             </div>
             <div class="flex flex-col items-center peak gap-2">
