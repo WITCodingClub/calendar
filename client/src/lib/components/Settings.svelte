@@ -12,6 +12,9 @@
     let email = $state<string | undefined>(undefined);
     let currentEnvironment = $state<Environment>('prod');
     let authenticatedEnvironments = $state<Environment[]>([]);
+    let notificationsDisabled = $state(false);
+    let connectedAccounts = $state<Array<{id: number, email: string, provider: string}>>([]);
+    let addEmailInput = $state("");
 
     $effect(() => {
         userSettings = $storedUserSettings;
@@ -40,6 +43,24 @@
             userSettings = await API.userSettings();
             storedUserSettings.set(userSettings);
             email = await API.getUserEmail().then(data => data.email);
+
+            // Fetch global calendar preferences for notification toggle
+            try {
+                const globalPref = await API.getGlobalCalendarPreference();
+                if (globalPref && Array.isArray(globalPref.reminder_settings) && globalPref.reminder_settings.length === 0) {
+                    notificationsDisabled = true;
+                }
+            } catch (e) {
+                // Global preference might not exist yet, that's okay
+            }
+
+            // Fetch connected accounts
+            try {
+                const accounts = await API.getConnectedAccounts();
+                connectedAccounts = accounts.oauth_credentials || [];
+            } catch (e) {
+                console.error('Failed to fetch connected accounts:', e);
+            }
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
@@ -173,6 +194,86 @@
         }
     }
 
+    async function toggleNotifications(disabled: boolean) {
+        notificationsDisabled = disabled;
+        try {
+            if (disabled) {
+                await API.setGlobalCalendarPreference({ reminder_settings: [] });
+                snackbar('All notifications disabled', undefined, true);
+            } else {
+                await API.setGlobalCalendarPreference({
+                    reminder_settings: [{ time: "30", type: "minutes", method: "notification" }]
+                });
+                snackbar('Default notifications restored (30 min before)', undefined, true);
+            }
+        } catch (e) {
+            console.error('Failed to update notification settings:', e);
+            snackbar('Failed to update notification settings', undefined, true);
+            notificationsDisabled = !disabled; // Revert
+        }
+    }
+
+    const notificationsDisabledGetterSetter = {
+        get value() { return notificationsDisabled; },
+        set value(value: boolean) {
+            toggleNotifications(value);
+        }
+    }
+
+    async function addGoogleAccount() {
+        if (!addEmailInput.trim()) {
+            snackbar('Please enter an email address', undefined, true);
+            return;
+        }
+
+        try {
+            const response = await API.requestOAuthForEmail(addEmailInput.trim());
+            if (response.error) {
+                snackbar(response.error, undefined, true);
+                return;
+            }
+
+            if (response.oauth_url) {
+                // Open OAuth popup
+                const popup = window.open(response.oauth_url, 'Google OAuth', 'width=500,height=600');
+
+                // Poll for popup close
+                const pollTimer = setInterval(async () => {
+                    if (popup?.closed) {
+                        clearInterval(pollTimer);
+                        // Refresh connected accounts
+                        try {
+                            const accounts = await API.getConnectedAccounts();
+                            connectedAccounts = accounts.oauth_credentials || [];
+                            snackbar('Account connected successfully!', undefined, true);
+                        } catch (e) {
+                            console.error('Failed to refresh accounts:', e);
+                        }
+                        addEmailInput = "";
+                    }
+                }, 500);
+            } else if (response.calendar_id) {
+                // Already connected
+                snackbar('This email is already connected', undefined, true);
+                addEmailInput = "";
+            }
+        } catch (e) {
+            console.error('Failed to add Google account:', e);
+            snackbar('Failed to add Google account', undefined, true);
+        }
+    }
+
+    async function disconnectAccount(credentialId: number) {
+        try {
+            await API.disconnectAccount(credentialId);
+            connectedAccounts = connectedAccounts.filter(a => a.id !== credentialId);
+            snackbar('Account disconnected', undefined, true);
+        } catch (e) {
+            console.error('Failed to disconnect account:', e);
+            snackbar('Failed to disconnect account', undefined, true);
+        }
+    }
+
     async function clearLocalStorage() {
         await chrome.storage.local.clear();
         localStorage.clear();
@@ -274,6 +375,60 @@
             <label>
                 <Switch bind:checked={advancedEditingGetterSetter.value} />
             </label>
+        </div>
+    </div>
+    <div class="flex flex-row gap-3 items-center justify-between">
+        <div class="flex flex-col">
+            <h2 class="text-md font-bold">Disable All Notifications</h2>
+            <p class="text-sm text-outline">Turn off all calendar event reminders</p>
+        </div>
+        <div class="flex flex-row gap-2 items-center">
+            <label>
+                <Switch bind:checked={notificationsDisabledGetterSetter.value} />
+            </label>
+        </div>
+    </div>
+
+    <!-- Connected Google Accounts Section -->
+    <div class="flex flex-col gap-3 mt-4 pt-4 border-t border-outline-variant">
+        <div class="flex flex-col gap-1">
+            <h2 class="text-md font-bold">Connected Google Accounts</h2>
+            <p class="text-sm text-outline">Add multiple Google accounts to sync your calendar</p>
+        </div>
+
+        {#if connectedAccounts.length > 0}
+            <div class="flex flex-col gap-2">
+                {#each connectedAccounts as account}
+                    <div class="flex flex-row gap-3 items-center justify-between bg-surface-container-low rounded-lg p-3">
+                        <div class="flex flex-row gap-2 items-center">
+                            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                            </svg>
+                            <span class="text-sm">{account.email}</span>
+                        </div>
+                        {#if connectedAccounts.length > 1}
+                            <Button variant="text" onclick={() => disconnectAccount(account.id)}>
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                </svg>
+                            </Button>
+                        {/if}
+                    </div>
+                {/each}
+            </div>
+        {:else}
+            <p class="text-sm text-outline-variant italic">No Google accounts connected</p>
+        {/if}
+
+        <div class="flex flex-row gap-2 items-center">
+            <input
+                type="email"
+                placeholder="Enter email address"
+                bind:value={addEmailInput}
+                class="flex-1 px-3 py-2 text-sm border border-outline-variant rounded-lg bg-surface focus:border-primary focus:outline-none"
+                onkeydown={(e) => e.key === 'Enter' && addGoogleAccount()}
+            />
+            <Button variant="tonal" onclick={addGoogleAccount}>Add Account</Button>
         </div>
     </div>
 

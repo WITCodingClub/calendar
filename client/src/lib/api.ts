@@ -236,4 +236,74 @@ export class API {
         return response.json();
     }
 
+    // Global calendar preferences
+    public static async getGlobalCalendarPreference(): Promise<any> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/calendar_preferences/global`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    }
+
+    public static async setGlobalCalendarPreference(preferences: {
+        reminder_settings?: any[];
+        title_template?: string;
+        description_template?: string;
+        color_id?: string;
+    }): Promise<any> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/calendar_preferences/global`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ calendar_preference: preferences })
+        });
+        return response.json();
+    }
+
+    // Connected Google accounts
+    public static async getConnectedAccounts(): Promise<{ oauth_credentials: Array<{id: number, email: string, provider: string}> }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/user/oauth_credentials`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    }
+
+    public static async requestOAuthForEmail(email: string): Promise<{ oauth_url?: string, calendar_id?: string, error?: string }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/user/gcal`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email })
+        });
+        return response.json();
+    }
+
+    public static async disconnectAccount(credentialId: number): Promise<void> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        await fetch(`${baseUrl}/user/oauth_credentials/${credentialId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+    }
+
 }
