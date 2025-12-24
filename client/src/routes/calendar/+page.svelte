@@ -239,7 +239,6 @@
 
     async function fetchFromCurrentPage(term: string | undefined): Promise<{ ics_url: string } | undefined> {
         if (!term) return;
-        const baseUrl = await API.baseUrl;
         let tabToUse: any;
         let shouldCloseTab = false;
         try {
@@ -305,20 +304,8 @@
             });
 
             const registrationData = results[0]?.result ?? [];
-            const newData = await fetch(`${baseUrl}/process_courses`, {
-                method: 'POST',
-                body: JSON.stringify(registrationData),
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${jwt_token}`
-                }
-            });
+            const response = await API.processCourses(registrationData);
 
-            if (!newData.ok) {
-                throw new Error(`Failed to process courses: ${newData.status} ${newData.statusText}`);
-            }
-
-            const response = await newData.json();
             if (typeof response === 'string') {
                 return { ics_url: response };
             }
@@ -368,38 +355,25 @@
         }
     }
 
-    async function getEventPerfs(eventId: number) {
-        const baseUrl = await API.baseUrl;
-        const res = await fetch(`${baseUrl}/meeting_times/${eventId}/preference`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${jwt_token}`
-            }
-        });
-        const data = await res.json();
+    async function getEventPerfs(eventId: number | string) {
+        const data = await API.getMeetingTimePreference(eventId);
         currentEventPrefs = data;
     }
 
     async function refreshAllEventPrefsForCurrentTerm() {
-        if (!selected || !jwt_token || !processedData) return;
-        const baseUrl = await API.baseUrl;
+        if (!selected || !processedData) return;
         const ids = Array.from(new Set(processedData.flatMap(c => c.meeting_times.map(mt => mt.id))));
         const responses = await Promise.all(ids.map(async (id) => {
             try {
-                const res = await fetch(`${baseUrl}/meeting_times/${id}/preference`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${jwt_token}` }
-                });
-                if (!res.ok) return undefined;
-                const data: GetPreferencesResponse = await res.json();
+                const data: GetPreferencesResponse = await API.getMeetingTimePreference(id);
                 return { id, data };
             } catch {
                 return undefined;
             }
         }));
-        const map = new Map<number, GetPreferencesResponse>();
+        const map = new Map<number | string, GetPreferencesResponse>();
         for (const r of responses) {
-            if (r?.id && r.data) map.set(r.id, r.data);
+            if (r?.id !== undefined && r.data) map.set(r.id, r.data);
         }
         if (map.size === 0) return;
         const dayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const;
@@ -465,13 +439,122 @@
         }
     }
 
+    async function refreshSchedule(termId: string | undefined) {
+        if (!termId || refreshing || loading) return;
+        try {
+            refreshing = true;
+            lastRefreshResult = null;
+
+            // Scrape current courses from LeopardWeb
+            let tabToUse: any;
+            let shouldCloseTab = false;
+            const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
+
+            const [currentTab] = await chrome.tabs.query({
+                active: true,
+                currentWindow: true
+            });
+
+            const isOnTargetPage = currentTab.url === targetUrl;
+            tabToUse = currentTab;
+            if (!isOnTargetPage) {
+                tabToUse = await chrome.tabs.create({ url: targetUrl });
+                shouldCloseTab = true;
+
+                await new Promise<void>((resolve) => {
+                    const listener = (tabId: number, changeInfo: any) => {
+                        if (tabId === tabToUse.id && changeInfo.status === 'complete') {
+                            chrome.tabs.onUpdated.removeListener(listener);
+                            resolve();
+                        }
+                    };
+                    chrome.tabs.onUpdated.addListener(listener);
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            if (!tabToUse?.id) {
+                snackbar('Failed to open LeopardWeb tab', undefined, true);
+                return;
+            }
+
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: tabToUse.id },
+                world: 'MAIN',
+                func: async (term: string) => {
+                    try {
+                        const r0 = await fetch(`https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/reset?term=${term}`, {
+                            credentials: 'include'
+                        });
+                        await r0.json();
+                        const r1 = await fetch('https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=', {
+                            credentials: 'include'
+                        });
+                        return await r1.json();
+                    } catch (e) {
+                        return ({ error: (e as Error).message });
+                    }
+                },
+                args: [termId]
+            });
+
+            if (shouldCloseTab && tabToUse?.id) {
+                await chrome.tabs.remove(tabToUse.id);
+            }
+
+            const registrationData = results[0]?.result ?? [];
+
+            // Call the reprocess endpoint
+            const response = await API.reprocessCourses(registrationData);
+
+            if (response.ics_url) {
+                storedIcsUrl.set(response.ics_url);
+            }
+
+            // Update the store with fresh data
+            const events = await API.getProcessedEvents(termId);
+            storedProcessedData.update((list) => {
+                const tid = String(termId);
+                const i = list.findIndex((x) => String(x.termId) === tid);
+                const next = [...list];
+                const ics = response.ics_url || $storedIcsUrl || '';
+                const responseData: ResponseData = { ics_url: ics, classes: events.classes };
+                if (i >= 0) next[i] = { termId: tid, responseData };
+                else next.push({ termId: tid, responseData });
+                return next;
+            });
+
+            // Show results
+            lastRefreshResult = {
+                removed: response.removed_enrollments,
+                removedCourses: response.removed_courses
+            };
+
+            if (response.removed_enrollments > 0) {
+                const courseNames = response.removed_courses.map(c => c.title).join(', ');
+                snackbar(`Schedule refreshed. Removed ${response.removed_enrollments} class${response.removed_enrollments > 1 ? 'es' : ''}: ${courseNames}`, undefined, true);
+            } else {
+                snackbar('Schedule refreshed. No changes detected.', undefined, true);
+            }
+
+            // Refresh event preferences after reprocessing
+            await refreshAllEventPrefsForCurrentTerm();
+
+        } catch (e) {
+            console.error('Failed to refresh schedule:', e);
+            snackbar('Failed to refresh schedule: ' + e, undefined, true);
+        } finally {
+            refreshing = false;
+        }
+    }
+
     function checkIsOtherCalendar() {
         const stored = browser ? localStorage.getItem('isOtherCalendar') === 'true' : false;
         return stored;
     }
 
     async function saveEventPerfs() {
-        const baseUrl = await API.baseUrl;
         const event_preference: Partial<{
             title_template: string;
             description_template: string;
@@ -534,30 +617,8 @@
         }
 
         const payload = { event_preference };
-        const put = await fetch(`${baseUrl}/meeting_times/${activeMeeting?.id}/preference`, {
-            method: 'PUT',
-            body: JSON.stringify(payload),
-            headers: {
-                'Authorization': `Bearer ${jwt_token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        if (!put.ok) {
-            activeCourse = undefined;
-            activeMeeting = undefined;
-            activeDay = undefined;
-            currentEventPrefs = undefined;
-            editTitle = "";
-            editDescription = "";
-            editLocation = "";
-            editTitleManual = "";
-            editDescriptionManual = "";
-            editLocationManual = "";
-            courseColor = "#d50000";
-            notifications = [];
-            editMode = false;
-            snackbar('Failed to save event preferences: ' + put.statusText, undefined, true);
-        } else {
+        try {
+            await API.updateMeetingTimePreference(activeMeeting?.id!, payload);
             snackbar('Event preferences saved successfully!', undefined, true);
 			let updatedTitle: string | undefined = undefined;
 			if (titleManualChanged) {
@@ -630,6 +691,21 @@
             courseColor = "#d50000";
             notifications = [];
             editMode = false;
+        } catch (e) {
+            activeCourse = undefined;
+            activeMeeting = undefined;
+            activeDay = undefined;
+            currentEventPrefs = undefined;
+            editTitle = "";
+            editDescription = "";
+            editLocation = "";
+            editTitleManual = "";
+            editDescriptionManual = "";
+            editLocationManual = "";
+            courseColor = "#d50000";
+            notifications = [];
+            editMode = false;
+            snackbar('Failed to save event preferences: ' + e, undefined, true);
         }
     }
 
@@ -656,6 +732,8 @@
     let editTitleManual = $state("");
     let editDescriptionManual = $state("");
     let editLocationManual = $state("");
+    let refreshing = $state(false);
+    let lastRefreshResult = $state<{ removed: number; removedCourses: Array<{ crn: number; title: string; course_number: number }> } | null>(null);
 
     async function listenforEnvironmentChanges() {
         chrome.storage.onChanged.addListener((changes: any) => {
@@ -816,12 +894,26 @@
         </div>
         <hr class="w-full border-outline-variant" />
         {#if tab == "a"}
-            <ConnectedButtons>
-                <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id?.toString()} onchange={async () => { const tid = terms?.current_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
-                <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
-                <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id?.toString()} onchange={async () => { const tid = terms?.next_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
-                <Button for="seg-b" variant="filled">{terms?.next_term.name}</Button>
-            </ConnectedButtons>
+            <div class="flex flex-row gap-3 items-center">
+                <ConnectedButtons>
+                    <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id?.toString()} onchange={async () => { const tid = terms?.current_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
+                    <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
+                    <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id?.toString()} onchange={async () => { const tid = terms?.next_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
+                    <Button for="seg-b" variant="filled">{terms?.next_term.name}</Button>
+                </ConnectedButtons>
+                {#if processedData}
+                    <Button variant="tonal" onclick={() => refreshSchedule(selected)} disabled={refreshing || loading}>
+                        {#if refreshing}
+                            <LoadingIndicator size={20} />
+                        {:else}
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span class="ml-1">Refresh</span>
+                        {/if}
+                    </Button>
+                {/if}
+            </div>
         {/if}
     {/if}
 
