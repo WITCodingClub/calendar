@@ -1,5 +1,5 @@
 import { EnvironmentManager } from "./environment";
-import type { isProcessed, ProcessedEvents, UserSettings } from "./types";
+import type { isProcessed, ProcessedEvents, UniversityCalendarEvent, UniversityEventCategoryWithCount, UserSettings } from "./types";
 
 export class API {
     private static async getBaseUrl(): Promise<string> {
@@ -103,6 +103,58 @@ export class API {
         const baseUrl = await this.getBaseUrl();
         const token = await this.getJwtToken();
         const response = await fetch(`${baseUrl}/user/ics_url`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    }
+
+    public static async getUniversityEventCategories(): Promise<{ categories: UniversityEventCategoryWithCount[] }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/university_calendar_events/categories`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    }
+
+    public static async getUniversityEvents(params?: { category?: string; categories?: string; start_date?: string; end_date?: string; term_id?: string; page?: number; per_page?: number }): Promise<{ events: UniversityCalendarEvent[]; meta: { current_page: number; total_pages: number; total_count: number; per_page: number } }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const searchParams = new URLSearchParams();
+        if (params?.category) searchParams.append('category', params.category);
+        if (params?.categories) searchParams.append('categories', params.categories);
+        if (params?.start_date) searchParams.append('start_date', params.start_date);
+        if (params?.end_date) searchParams.append('end_date', params.end_date);
+        if (params?.term_id) searchParams.append('term_id', params.term_id);
+        if (params?.page) searchParams.append('page', params.page.toString());
+        if (params?.per_page) searchParams.append('per_page', params.per_page.toString());
+
+        const url = `${baseUrl}/university_calendar_events${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    }
+
+    public static async getHolidays(params?: { term_id?: string; start_date?: string; end_date?: string }): Promise<{ holidays: UniversityCalendarEvent[] }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const searchParams = new URLSearchParams();
+        if (params?.term_id) searchParams.append('term_id', params.term_id);
+        if (params?.start_date) searchParams.append('start_date', params.start_date);
+        if (params?.end_date) searchParams.append('end_date', params.end_date);
+
+        const url = `${baseUrl}/university_calendar_events/holidays${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
