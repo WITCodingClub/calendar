@@ -163,4 +163,77 @@ export class API {
         return response.json();
     }
 
+    // Course processing endpoints
+    public static async processCourses(courses: any[]): Promise<{ user_pub: string; ics_url: string }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/process_courses`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(courses)
+        });
+        return response.json();
+    }
+
+    public static async reprocessCourses(courses: any[]): Promise<{
+        ics_url: string;
+        removed_enrollments: number;
+        removed_courses: Array<{ crn: number; title: string; course_number: number }>;
+        processed_courses: any[];
+    }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/courses/reprocess`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ courses })
+        });
+        return response.json();
+    }
+
+    // Event preferences endpoints
+    public static async getMeetingTimePreference(meetingTimeId: number | string): Promise<any> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/meeting_times/${meetingTimeId}/preference`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    }
+
+    public static async updateMeetingTimePreference(meetingTimeId: number | string, preferences: any): Promise<any> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/meeting_times/${meetingTimeId}/preference`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(preferences)
+        });
+        return response.json();
+    }
+
+    public static async deleteMeetingTimePreference(meetingTimeId: number | string): Promise<any> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/meeting_times/${meetingTimeId}/preference`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    }
+
 }
