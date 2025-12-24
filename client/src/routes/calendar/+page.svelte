@@ -27,7 +27,6 @@
     let lectureColor = $derived($storedUserSettings?.default_color_lecture ?? "#039be5");
     let labColor = $derived($storedUserSettings?.default_color_lab ?? "#f6bf26");
     let advancedEditing = $derived($storedUserSettings?.advanced_editing ?? false);
-    let otherCalUser = $state(false);
     let currentEventPrefs = $state<GetPreferencesResponse | undefined>(undefined);
     let templates: TemplateVariables | undefined = $derived(currentEventPrefs?.templates);
     let resolved: ResolvedData | undefined = $derived(currentEventPrefs?.resolved);
@@ -549,10 +548,6 @@
         }
     }
 
-    function checkIsOtherCalendar() {
-        const stored = browser ? localStorage.getItem('isOtherCalendar') === 'true' : false;
-        return stored;
-    }
 
     async function saveEventPerfs() {
         const event_preference: Partial<{
@@ -760,7 +755,6 @@
                     // Now fetch fresh data for the current environment
                     terms = await API.getTerms();
                     storedUserSettings.set(await API.userSettings());
-                    otherCalUser = checkIsOtherCalendar();
                 }
             });
         });
@@ -788,7 +782,6 @@
         // Now fetch fresh data for the current environment
         terms = await API.getTerms();
         storedUserSettings.set(await API.userSettings());
-        otherCalUser = checkIsOtherCalendar();
         listenforEnvironmentChanges();
     });
 
@@ -872,14 +865,12 @@
         <div>
             <div class="flex flex-col gap-1 items-center">
                 <h1 class="text-xl font-bold text-primary text-center mb-1">Your Calendar</h1>
-                {#if otherCalUser}
-                    <p class="text-md text-secondary text-center">
-                        Copy the link below and add it to your calendar app.
-                    </p>
-                    <div class="flex flex-row gap-2 items-center">
-                        <Button variant="outlined" square onclick={copyIcsToClipboard}>Copy Calendar Link</Button>
-                    </div>
-                {/if}
+                <p class="text-md text-secondary text-center">
+                    Subscribe in any calendar app with the link below.
+                </p>
+                <div class="flex flex-row gap-2 items-center">
+                    <Button variant="outlined" square onclick={copyIcsToClipboard}>Copy Calendar Link</Button>
+                </div>
             </div>
         </div>
         <div class="not-peak">
