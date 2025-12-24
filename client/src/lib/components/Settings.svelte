@@ -52,6 +52,9 @@
     let defaultColorLab = $derived(userSettings?.default_color_lab ?? "");
     let militaryTimeValue = $derived(userSettings?.military_time ? "true" : "false");
     let advancedEditingValue = $derived(userSettings?.advanced_editing ?? false);
+    let syncUniversityEventsValue = $derived(userSettings?.sync_university_events ?? false);
+    let universityEventCategories = $derived(userSettings?.university_event_categories ?? []);
+    let availableCategories = $derived(userSettings?.available_university_event_categories ?? []);
 
     const defaultColorLectureGetterSetter = {
         get value() { return defaultColorLecture; },
@@ -93,6 +96,36 @@
 			storedUserSettings.set(userSettings);
 			API.userSettings(userSettings);
 		}
+    }
+
+    const syncUniversityEventsGetterSetter = {
+        get value() { return syncUniversityEventsValue; },
+		set value(value: boolean) {
+			if (!userSettings) return;
+			userSettings = { ...userSettings, sync_university_events: value };
+			storedUserSettings.set(userSettings);
+			API.userSettings(userSettings);
+		}
+    }
+
+    function toggleUniversityCategory(categoryId: string) {
+        if (!userSettings) return;
+        const currentCategories = userSettings.university_event_categories ?? [];
+        let newCategories: string[];
+
+        if (currentCategories.includes(categoryId)) {
+            newCategories = currentCategories.filter(c => c !== categoryId);
+        } else {
+            newCategories = [...currentCategories, categoryId];
+        }
+
+        userSettings = { ...userSettings, university_event_categories: newCategories };
+        storedUserSettings.set(userSettings);
+        API.userSettings(userSettings);
+    }
+
+    function isCategorySelected(categoryId: string): boolean {
+        return universityEventCategories.includes(categoryId);
     }
 
     function clearStoredColors() {
@@ -243,6 +276,42 @@
             </label>
         </div>
     </div>
+
+    <!-- University Calendar Events Section -->
+    <div class="flex flex-col gap-3 mt-4 pt-4 border-t border-outline-variant">
+        <div class="flex flex-row gap-3 items-center justify-between">
+            <div class="flex flex-col">
+                <h2 class="text-md font-bold">Sync University Events</h2>
+                <p class="text-sm text-outline">Add campus events to your calendar (holidays are always synced)</p>
+            </div>
+            <div class="flex flex-row gap-2 items-center">
+                <label>
+                    <Switch bind:checked={syncUniversityEventsGetterSetter.value} />
+                </label>
+            </div>
+        </div>
+
+        {#if syncUniversityEventsValue && availableCategories.length > 0}
+            <div class="flex flex-col gap-2 ml-2 pl-4 border-l-2 border-outline-variant">
+                <p class="text-sm text-outline font-medium">Select event types to sync:</p>
+                {#each availableCategories.filter(c => c.id !== 'holiday') as category}
+                    <label class="flex flex-row gap-3 items-start cursor-pointer hover:bg-surface-variant rounded-lg p-2 -m-2 transition-colors">
+                        <input
+                            type="checkbox"
+                            checked={isCategorySelected(category.id)}
+                            onchange={() => toggleUniversityCategory(category.id)}
+                            class="mt-1 w-4 h-4 accent-primary"
+                        />
+                        <div class="flex flex-col">
+                            <span class="text-sm font-medium">{category.name}</span>
+                            <span class="text-xs text-outline">{category.description}</span>
+                        </div>
+                    </label>
+                {/each}
+            </div>
+        {/if}
+    </div>
+
     <div class="flex flex-col gap-2 items-center justify-center mt-6 w-full">
         <Button variant="filled" onclick={clearLocalStorage}>Clear Local Data</Button>
         <p class="text-sm text-error text-center max-w-md">
