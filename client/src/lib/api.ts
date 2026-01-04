@@ -184,6 +184,10 @@ export class API {
             },
             body: JSON.stringify(courses)
         });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Process courses failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
         return response.json();
     }
 
@@ -203,6 +207,10 @@ export class API {
             },
             body: JSON.stringify({ courses })
         });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Reprocess courses failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
         return response.json();
     }
 
@@ -216,6 +224,9 @@ export class API {
                 'Authorization': `Bearer ${token}`
             }
         });
+        if (!response.ok) {
+            return undefined;
+        }
         return response.json();
     }
 
@@ -230,6 +241,10 @@ export class API {
             },
             body: JSON.stringify(preferences)
         });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Update meeting time preference failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
         return response.json();
     }
 

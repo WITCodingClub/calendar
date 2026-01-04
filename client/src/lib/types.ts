@@ -14,7 +14,7 @@ interface Course {
     meeting_times: MeetingTime[];
 }
 
-const FEATUE_FLAGS = [
+const FEATURE_FLAGS = [
     "v1",
     "v2",
     "debugMode",
@@ -221,7 +221,7 @@ interface NotificationSetting {
 }
 
 export {
-    FEATUE_FLAGS,
+    FEATURE_FLAGS,
     type Building,
     type CalendarConfig, type Course, type CurrentTerm, type DayItem,
     type EventPreferences, type GetPreferencesResponse, type isProcessed, type Location,

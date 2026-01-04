@@ -1,8 +1,8 @@
 import { derived, writable } from 'svelte/store';
 import { API } from './api';
-import { FEATUE_FLAGS } from './types';
+import { FEATURE_FLAGS } from './types';
 
-type FeatureFlagName = typeof FEATUE_FLAGS[number];
+type FeatureFlagName = typeof FEATURE_FLAGS[number];
 type FeatureFlagsState = Record<FeatureFlagName, boolean>;
 
 
@@ -35,7 +35,7 @@ class FeatureFlagsService {
         try {
             const flags: FeatureFlagsState = {} as FeatureFlagsState;
 
-            const flagPromises = FEATUE_FLAGS.map(async (flagName) => {
+            const flagPromises = FEATURE_FLAGS.map(async (flagName) => {
                 try {
                     const isEnabled = await API.checkFeatureFlag(flagName);
                     flags[flagName as FeatureFlagName] = isEnabled;
