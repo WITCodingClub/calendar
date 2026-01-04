@@ -239,7 +239,7 @@
     async function fetchFromCurrentPage(term: string | undefined): Promise<{ ics_url: string } | undefined> {
         if (!term) return;
         const baseUrl = await API.baseUrl;
-        let tabToUse: any;
+        let tabToUse: chrome.tabs.Tab | undefined;
         let shouldCloseTab = false;
         try {
             const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
@@ -256,7 +256,7 @@
                 shouldCloseTab = true;
 
                 await new Promise<void>((resolve) => {
-                    const listener = (tabId: number, changeInfo: any) => {
+                    const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
                         if (tabId === tabToUse.id && changeInfo.status === 'complete') {
                             chrome.tabs.onUpdated.removeListener(listener);
                             resolve();
@@ -297,13 +297,19 @@
     					});
     					return await r1.json();
     				} catch (e) {
-    					return ({ error: (e as Error).message });
+    					return ({ error: e instanceof Error ? e.message : String(e) });
     				}
                 },
                 args: [term]
             });
 
             const registrationData = results[0]?.result ?? [];
+
+            // Check if the script returned an error
+            if (registrationData?.error) {
+                throw new Error(registrationData.error);
+            }
+
             const response = await API.processCourses(registrationData);
 
             if (typeof response === 'string') {
@@ -446,7 +452,7 @@
             lastRefreshResult = null;
 
             // Scrape current courses from LeopardWeb
-            let tabToUse: any;
+            let tabToUse: chrome.tabs.Tab | undefined;
             let shouldCloseTab = false;
             const targetUrl = 'https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory';
 
@@ -462,7 +468,7 @@
                 shouldCloseTab = true;
 
                 await new Promise<void>((resolve) => {
-                    const listener = (tabId: number, changeInfo: any) => {
+                    const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
                         if (tabId === tabToUse.id && changeInfo.status === 'complete') {
                             chrome.tabs.onUpdated.removeListener(listener);
                             resolve();
@@ -493,7 +499,7 @@
                         });
                         return await r1.json();
                     } catch (e) {
-                        return ({ error: (e as Error).message });
+                        return ({ error: e instanceof Error ? e.message : String(e) });
                     }
                 },
                 args: [termId]
@@ -504,6 +510,11 @@
             }
 
             const registrationData = results[0]?.result ?? [];
+
+            // Check if the script returned an error
+            if (registrationData?.error) {
+                throw new Error(registrationData.error);
+            }
 
             // Call the reprocess endpoint
             const response = await API.reprocessCourses(registrationData);
@@ -543,7 +554,7 @@
 
         } catch (e) {
             console.error('Failed to refresh schedule:', e);
-            snackbar('Failed to refresh schedule: ' + e, undefined, true);
+            snackbar('Failed to refresh schedule: ' + (e instanceof Error ? e.message : String(e)), undefined, true);
         } finally {
             refreshing = false;
         }
@@ -614,8 +625,13 @@
         }
 
         const payload = { event_preference };
+        const meetingIdForUpdate = activeMeeting?.id;
+        if (!meetingIdForUpdate) {
+            snackbar('No meeting selected', undefined, true);
+            return;
+        }
         try {
-            await API.updateMeetingTimePreference(activeMeeting?.id!, payload);
+            await API.updateMeetingTimePreference(meetingIdForUpdate, payload);
             snackbar('Event preferences saved successfully!', undefined, true);
 			let updatedTitle: string | undefined = undefined;
 			if (titleManualChanged) {
@@ -702,7 +718,7 @@
             courseColor = "#d50000";
             notifications = [];
             editMode = false;
-            snackbar('Failed to save event preferences: ' + e, undefined, true);
+            snackbar('Failed to save event preferences: ' + (e instanceof Error ? e.message : String(e)), undefined, true);
         }
     }
 
@@ -732,10 +748,18 @@
     let refreshing = $state(false);
     let lastRefreshResult = $state<{ removed: number; removedCourses: Array<{ crn: number; title: string; course_number: number }> } | null>(null);
 
-    async function listenforEnvironmentChanges() {
-        chrome.storage.onChanged.addListener((changes: any) => {
-            Object.entries(changes).forEach(async ([key]) => {
-                if (key === 'environment_data') {
+    function clearEnvironmentData() {
+        storedProcessedData.set([]);
+        storedUserSettings.set(undefined);
+        storedIcsUrl.set(undefined);
+        attemptedTerms = new Set();
+        refreshedTerms = new Set();
+    }
+
+    async function listenForEnvironmentChanges() {
+        chrome.storage.onChanged.addListener((changes: chrome.storage.StorageChanges) => {
+            if ('environment_data' in changes) {
+                (async () => {
                     checkBetaAccess();
                     jwt_token = await API.getJwtToken();
                     if (!jwt_token) {
@@ -745,20 +769,14 @@
                     }
 
                     // IMPORTANT: Clear data FIRST before fetching anything for environment switches
-                    if (shouldClearData) {
-                        // Clear stored data to force refetch for new environment
-                        storedProcessedData.set([]);
-                        storedUserSettings.set(undefined);
-                        storedIcsUrl.set(undefined);
-                        attemptedTerms = new Set();
-                        refreshedTerms = new Set();
-                    }
+                    // Always clear on environment change detected via listener
+                    clearEnvironmentData();
 
                     // Now fetch fresh data for the current environment
                     terms = await API.getTerms();
                     storedUserSettings.set(await API.userSettings());
-                }
-            });
+                })();
+            }
         });
     }
 
@@ -773,18 +791,13 @@
 
         // IMPORTANT: Clear data FIRST before fetching anything for environment switches
         if (shouldClearData) {
-            // Clear stored data to force refetch for new environment
-            storedProcessedData.set([]);
-            storedUserSettings.set(undefined);
-            storedIcsUrl.set(undefined);
-            attemptedTerms = new Set();
-            refreshedTerms = new Set();
+            clearEnvironmentData();
         }
 
         // Now fetch fresh data for the current environment
         terms = await API.getTerms();
         storedUserSettings.set(await API.userSettings());
-        listenforEnvironmentChanges();
+        listenForEnvironmentChanges();
     });
 
     $effect(() => {
