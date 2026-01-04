@@ -1,12 +1,12 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { LoadingIndicator, Button } from 'm3-svelte';
     import { API } from '$lib/api';
+    import { Button, LoadingIndicator, snackbar } from 'm3-svelte';
+    import { onMount } from 'svelte';
     import { EnvironmentManager } from '$lib/environment';
-    import { snackbar } from 'm3-svelte';
 
     let schoolEmail = $state('');
+    let preferredName = $state('');
     let error = $state<string | null>(null);
 
     onMount(async () => {
@@ -16,70 +16,99 @@
     });
 
     async function fetchSchoolEmail() {
+        const preferredNameUrl = 'https://selfservice.wit.edu/BannerGeneralSsb/ssb/PersonalInformationDetails/getPreferredName';
+        const emailsUrl = 'https://selfservice.wit.edu/BannerGeneralSsb/ssb/PersonalInformationDetails/getEmails';
+
+        let tabToUse: chrome.tabs.Tab | undefined;
+        let createdNewTab = false;
+
         try {
             error = null;
-            const targetUrl = 'https://selfservice.wit.edu/BannerGeneralSsb/ssb/PersonalInformationDetails/getEmails';
-            
-            const [currentTab] = await chrome.tabs.query({ 
-                active: true, 
-                currentWindow: true 
-            });
-            
-            const isOnTargetPage = currentTab.url === targetUrl;
-            let tabToUse = currentTab;
-            let shouldCloseTab = true;
-            
-            if (!isOnTargetPage) {
-                tabToUse = await chrome.tabs.create({ url: targetUrl });
-                shouldCloseTab = true;
-                
+
+            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            const isOnPreferredNamePage = currentTab?.url === preferredNameUrl;
+
+            if (isOnPreferredNamePage) {
+                tabToUse = currentTab;
+                createdNewTab = false;
+            } else {
+                tabToUse = await chrome.tabs.create({ url: preferredNameUrl });
+                createdNewTab = true;
+
                 await new Promise<void>((resolve) => {
-                    const listener = (tabId: number, changeInfo: any) => {
-                        if (tabId === tabToUse.id && changeInfo.status === 'complete') {
+                    // @ts-expect-error
+                    const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+                        if (tabId === tabToUse!.id && changeInfo.status === 'complete') {
                             chrome.tabs.onUpdated.removeListener(listener);
                             resolve();
                         }
-                    }
+                    };
                     chrome.tabs.onUpdated.addListener(listener);
                 });
             }
-            
-            if (!tabToUse.id) {
+
+            if (!tabToUse?.id) {
                 throw new Error('Failed to get tab ID');
             }
-            
-            const results = await chrome.scripting.executeScript({
+
+            // 1) Hit preferred name endpoint first (establish cookies/session)
+            const preferredRes = await chrome.scripting.executeScript({
                 target: { tabId: tabToUse.id },
                 world: 'MAIN',
-                func: () => {
-                    return fetch('https://selfservice.wit.edu/BannerGeneralSsb/ssb/PersonalInformationDetails/getEmails', {
-                        credentials: 'include'
-                    }).then(r => r.json()).catch(e => ({ error: e.message }));
-                }
+                func: (fetchUrl: string) => {
+                    return fetch(fetchUrl, { credentials: 'include' })
+                        .then(r => r.json())
+                        .catch(e => ({ error: e.message }));
+                },
+                args: [preferredNameUrl]
             });
 
-            const data = results[0]?.result ?? { emails: [] };
+            const preferredData = preferredRes[0]?.result ?? { preferredName: '' };
+            if (preferredData.preferredName) {
+                preferredName = preferredData.preferredName;
+            }
 
+
+            if (preferredData.error) {
+                throw new Error(preferredData.error);
+            }
+
+            // 2) Hit emails endpoint in the SAME tab
+            const emailRes = await chrome.scripting.executeScript({
+                target: { tabId: tabToUse.id },
+                world: 'MAIN',
+                func: (fetchUrl: string) => {
+                    return fetch(fetchUrl, { credentials: 'include' })
+                        .then(r => r.json())
+                        .catch(e => ({ error: e.message }));
+                },
+                args: [emailsUrl]
+            });
+            const data = emailRes[0]?.result ?? { emails: [] };
             if (data.error) {
                 throw new Error(data.error);
             }
 
-            if (data.emails) {
-                data.emails.forEach((email: any) => {
-                    if (email.emailType?.code === 'W') {
-                        schoolEmail = email.emailAddress;
-                    }
-                });
+            if (Array.isArray(data.emails)) {
+                const witEmail = data.emails.find((email: any) => email?.emailType?.code === 'W');
+                if (witEmail?.emailAddress) {
+                    schoolEmail = witEmail.emailAddress;
+                }
             }
 
-            if (shouldCloseTab && tabToUse.id) {
-                await chrome.tabs.remove(tabToUse.id);
-            }
-
-            signIn();
+            await signIn();
         } catch (err) {
             error = 'Failed to fetch data! Make';
             snackbar('Failed to fetch data: ' + err, undefined, true);
+        } finally {
+            // Close ONLY if we created a new tab for preferred name
+            if (createdNewTab && tabToUse?.id) {
+                try {
+                    await chrome.tabs.remove(tabToUse.id);
+                } catch {
+                    // ignore close errors
+                }
+            }
         }
     }
 
@@ -88,7 +117,7 @@
             const baseUrl = await API.baseUrl;
             const response = await fetch(`${baseUrl}/user/onboard`, {
                 method: 'POST',
-                body: JSON.stringify({email: schoolEmail}),
+                body: JSON.stringify({email: schoolEmail, preferred_name: preferredName}),
                 headers: {
                     'Content-Type': 'application/json'
                 }

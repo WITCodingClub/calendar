@@ -1,6 +1,7 @@
 interface Building {
     name: string;
     abbreviation: string;
+    pub_id?: string;
 }
 
 interface Course {
@@ -29,7 +30,7 @@ interface Location {
 }
 
 interface MeetingTime {
-    id: number;
+    id: number | string;  // Can be internal ID or public_id
     begin_time: string;
     end_time: string;
     start_date: string;
@@ -44,6 +45,15 @@ interface MeetingTime {
     sunday: boolean;
     color?: string;
     title_overrides?: Partial<Record<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', string>>;
+    calendar_config?: CalendarConfig;
+}
+
+interface CalendarConfig {
+    title: string;
+    description?: string;
+    color_id?: string;
+    reminder_settings?: ReminderSettings[];
+    visibility?: string;
 }
 
 interface isProcessed {
@@ -55,6 +65,7 @@ interface Professor {
     last_name: string;
     email: string;
     rmp_id?: string;
+    pub_id?: string;
 }
 
 interface ResponseData {
@@ -70,6 +81,7 @@ interface Term {
     uid: number;
     season: string;
     year: number;
+    pub_id?: string;
 }
 
 interface UserSettings {
@@ -77,16 +89,55 @@ interface UserSettings {
     default_color_lecture: string;
     default_color_lab: string;
     advanced_editing: boolean;
+    sync_university_events: boolean;
+    university_event_categories: string[];
+    available_university_event_categories?: UniversityEventCategory[];
+}
+
+interface UniversityEventCategory {
+    id: string;
+    name: string;
+    description: string;
+}
+
+interface UniversityEventCategoryWithCount {
+    id: string;
+    name: string;
+    count: number;
+}
+
+interface UniversityCalendarEvent {
+    id: string;
+    summary: string;
+    description?: string;
+    location?: string;
+    start_time: string;
+    end_time: string;
+    all_day: boolean;
+    category: string;
+    organization?: string;
+    academic_term?: string;
+    term_id?: string;
+    excludes_classes: boolean;
+    formatted_date: string;
+    created_at: string;
+    updated_at: string;
 }
 
 interface CurrentTerm {
     name: string;
     id: number;
+    pub_id?: string;
+    start_date?: string;
+    end_date?: string;
 }
 
 interface NextTerm {
     name: string;
     id: number;
+    pub_id?: string;
+    start_date?: string;
+    end_date?: string;
 }
 
 interface TermResponse {
@@ -170,7 +221,7 @@ interface NotificationSetting {
 export {
     FEATUE_FLAGS,
     type Building,
-    type Course, type CurrentTerm, type DayItem,
+    type CalendarConfig, type Course, type CurrentTerm, type DayItem,
     type EventPreferences, type GetPreferencesResponse, type isProcessed, type Location,
-    type MeetingTime, type NextTerm, type NotificationMethod, type NotificationSetting, type NotificationType, type Preview, type ProcessedEvents, type Professor, type ReminderSettings, type ResolvedData, type ResponseData, type TemplateVariables, type Term, type TermResponse, type UserSettings
+    type MeetingTime, type NextTerm, type NotificationMethod, type NotificationSetting, type NotificationType, type Preview, type ProcessedEvents, type Professor, type ReminderSettings, type ResolvedData, type ResponseData, type TemplateVariables, type Term, type TermResponse, type UniversityCalendarEvent, type UniversityEventCategory, type UniversityEventCategoryWithCount, type UserSettings
 };
