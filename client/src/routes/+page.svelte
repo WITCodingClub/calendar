@@ -37,11 +37,14 @@
                     target="_blank"
                     class="text-primary underline break-all"
                 >
-                    selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory
+                    https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory
                 </a>
             </li>
             <li>
                 You can expand the extension sidebar by dragging the left edge to see more of your calendar.
+            </li>
+            <li>
+                Check out our website for more info and support: <a href="https://calendar.witcc.dev" target="_blank" class="text-primary underline">https://calendar.witcc.dev</a>
             </li>
         </ul>
     </div>

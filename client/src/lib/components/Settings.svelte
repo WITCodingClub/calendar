@@ -3,6 +3,7 @@
     import { goto } from "$app/navigation";
     import { API } from "$lib/api";
     import { EnvironmentManager, ENVIRONMENTS, type Environment } from "$lib/environment";
+    import { featureFlags } from "$lib/featureFlags";
     import { processedData as storedProcessedData, userSettings as storedUserSettings } from "$lib/store";
     import type { UserSettings } from "$lib/types";
     import { Button, SelectOutlined, snackbar, Switch } from "m3-svelte";
@@ -15,6 +16,9 @@
     let notificationsDisabled = $state(false);
     let connectedAccounts = $state<Array<{id: number, email: string, provider: string}>>([]);
     let addEmailInput = $state("");
+    let showEnvSwitcher = $state<boolean>(false);
+    let showClearDataButton = $state<boolean>(false);
+    let isRefreshingFlags = $state<boolean>(false);
 
     $effect(() => {
         userSettings = $storedUserSettings;
@@ -28,6 +32,10 @@
                     email = await API.getUserEmail().then(data => data.email);
                     currentEnvironment = await EnvironmentManager.getCurrentEnvironment();
                     authenticatedEnvironments = await EnvironmentManager.getAuthenticatedEnvironments();
+                    // Reload feature flags after environment switch
+                    await featureFlags.reload();
+                    showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
+                    showClearDataButton = featureFlags.isEnabledSync('debugMode');
                 } catch (error) {
                     console.error('Failed to refetch email/env after environment switch:', error);
                 }
@@ -40,9 +48,18 @@
         await EnvironmentManager.migrateOldJwtToken();
 
         try {
-            userSettings = await API.userSettings();
+            // Load feature flags and settings in parallel
+            const [, userSettingsData, emailData] = await Promise.all([
+                featureFlags.loadFlags(),
+                API.userSettings(),
+                API.getUserEmail()
+            ]);
+
+            userSettings = userSettingsData;
             storedUserSettings.set(userSettings);
-            email = await API.getUserEmail().then(data => data.email);
+            email = emailData.email;
+            showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
+            showClearDataButton = featureFlags.isEnabledSync('debugMode');
 
             // Fetch global calendar preferences for notification toggle
             try {
@@ -67,6 +84,36 @@
 
         currentEnvironment = await EnvironmentManager.getCurrentEnvironment();
         authenticatedEnvironments = await EnvironmentManager.getAuthenticatedEnvironments();
+
+        // Multiple event handlers to catch different scenarios
+        const reloadFlags = async () => {
+            await featureFlags.reload();
+            showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
+            showClearDataButton = featureFlags.isEnabledSync('debugMode');
+        };
+
+        // 1. Window focus (when clicking back to the extension)
+        window.addEventListener('focus', reloadFlags);
+
+        // 2. Visibility change (when tab becomes visible)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                reloadFlags();
+            }
+        });
+
+        // 3. Periodic check every 30 seconds while page is visible
+        const pollInterval = setInterval(() => {
+            if (!document.hidden) {
+                reloadFlags();
+            }
+        }, 30000);
+
+        return () => {
+            window.removeEventListener('focus', reloadFlags);
+            document.removeEventListener('visibilitychange', reloadFlags);
+            clearInterval(pollInterval);
+        };
     });
 
     let defaultColorLecture = $derived(userSettings?.default_color_lecture ?? "");
@@ -283,11 +330,27 @@
         snackbar('Local data cleared successfully', undefined, true);
         await goto('/');
     }
+
+    async function manualRefreshFeatureFlags() {
+        isRefreshingFlags = true;
+        try {
+            featureFlags.clearCache();
+            await featureFlags.reload();
+            showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
+            showClearDataButton = featureFlags.isEnabledSync('debugMode');
+            snackbar('Feature flags refreshed!', undefined, true);
+        } finally {
+            isRefreshingFlags = false;
+        }
+    }
 </script>
 
-<h1 class="text-lg font-bold">Currently signed in as: {email}</h1>
+<div class="flex flex-row items-center justify-between mb-4">
+    <h1 class="text-lg font-bold">Currently signed in as: {email}</h1>
+</div>
 
 <div class="flex flex-col gap-3">
+    {#if showEnvSwitcher}
     <div class="flex flex-row gap-3 items-center justify-between">
         <div class="flex flex-col">
             <h2 class="text-md font-bold">Environment</h2>
@@ -313,6 +376,7 @@
             />
         </div>
     </div>
+    {/if}
     <div class="flex flex-row gap-3 items-center justify-between">
         <h2 class="text-md font-bold">Default Lecture Color</h2>
         <div class="flex flex-row gap-2 items-center">
@@ -468,10 +532,17 @@
     </div>
 
     <div class="flex flex-col gap-2 items-center justify-center mt-6 w-full">
+        <Button variant="tonal" onclick={manualRefreshFeatureFlags} disabled={isRefreshingFlags}>
+            {isRefreshingFlags ? 'Refreshing...' : 'Refresh Flags'}
+        </Button>
+    </div>
+    {#if showClearDataButton}
+    <div class="flex flex-col gap-2 items-center justify-center mt-6 w-full">
         <Button variant="filled" onclick={clearLocalStorage}>Clear Local Data</Button>
         <p class="text-sm text-error text-center max-w-md">
             <span class="font-semibold">Warning:</span>
             This will clear all your local data and you will need to sign in again. This does <b>not</b> affect your Calendar data.
         </p>
     </div>
+    {/if}
 </div>

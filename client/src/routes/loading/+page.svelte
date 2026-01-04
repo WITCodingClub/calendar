@@ -2,6 +2,7 @@
     import { goto } from '$app/navigation';
     import { API } from '$lib/api';
     import { Button, LoadingIndicator, snackbar } from 'm3-svelte';
+    import ErrorNotice from '$lib/components/ErrorNotice.svelte';
     import { onMount } from 'svelte';
     import { EnvironmentManager } from '$lib/environment';
 
@@ -123,6 +124,12 @@
                 }
             });
 
+            if (!response.ok) {
+                const responseText = await response.text();
+                console.error('Sign in error response:', responseText);
+                throw new Error(`Server returned ${response.status}`);
+            }
+
             const data = await response.json() as { jwt?: string; message?: string; error?: string; beta_access?: boolean };
 
             if (data && data.beta_access === false) {
@@ -131,18 +138,15 @@
                 return Promise.reject(new Error('Beta access denied')) as never;
             }
 
-            if (response.ok) {
-                if (data.jwt) {
-                    await EnvironmentManager.setJwtToken(data.jwt);
-                }
-            } else {
-                throw new Error(data.message || 'Server is (probably) down! Please email mayonej@wit.edu!');
+            if (data.jwt) {
+                await EnvironmentManager.setJwtToken(data.jwt);
             }
 
             await new Promise(resolve => setTimeout(resolve, 1500));
             goto('/onboard');
         } catch (err) {
-            error = 'Server is (probably) down! Please email mayonej@wit.edu! Also, make';
+            console.error('Sign in error:', err);
+            error = 'Server is (probably) down!';
             snackbar('Failed to sign in: ' + err, undefined, true);
         }
     }
@@ -150,9 +154,11 @@
 
 <div class="flex flex-col items-center justify-center min-h-screen w-full px-4">
     <div class=" rounded-lg shadow-md p-8 flex flex-col items-center peak {error ? 'bg-error' : 'bg-surface-container-high'}">
-        {#if error}
-            <h1 class="text-3xl font-extrabold text-center text-on-error mb-4">Failed to sign in!</h1>
-            <p class="text-center text-error-container mb-4 break">{error} sure you're logged in to <a class="text-on-error underline" href="https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory" target="_blank">WIT Self Service</a>.</p>
+        {#if error == 'Server is (probably) down!'}
+            <ErrorNotice title="Failed to sign in!" error={error} includeStatusLink={true} />
+            <Button variant="elevated" square onclick={fetchSchoolEmail}>Try Again</Button>
+        {:else if error == 'Failed to fetch data! Make'}
+            <ErrorNotice title="Failed to fetch data!" error={error} includeStatusLink={false} />
             <Button variant="elevated" square onclick={fetchSchoolEmail}>Try Again</Button>
         {:else}
             <h1 class="text-3xl font-extrabold text-center text-primary mb-6">Signing in!</h1>
