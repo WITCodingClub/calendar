@@ -373,7 +373,7 @@
         }));
         const map = new Map<number | string, GetPreferencesResponse>();
         for (const r of responses) {
-            if (r?.id !== undefined && r.data) map.set(r.id, r.data);
+            if (r?.id != null && r.data) map.set(r.id, r.data);
         }
         if (map.size === 0) return;
         const dayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const;
