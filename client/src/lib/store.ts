@@ -19,6 +19,10 @@ export const processedData = writable<Array<{ termId: string; responseData: Resp
 export const userSettings = writable<UserSettings | undefined>(undefined);
 export const icsUrl = writable<string | undefined>(undefined);
 
+function migrateIcsUrl(url: string): string {
+	return url.replace('server.calendar.witcc.dev', 'server-calendar.witcc.dev');
+}
+
 if (browser) {
 	const storedUserSettings = localStorage.getItem('userSettings');
 	if (storedUserSettings) {
@@ -26,7 +30,11 @@ if (browser) {
 	}
 	const storedIcsUrl = localStorage.getItem('icsUrl');
 	if (storedIcsUrl) {
-		icsUrl.set(storedIcsUrl);
+		const migratedUrl = migrateIcsUrl(storedIcsUrl);
+		if (migratedUrl !== storedIcsUrl) {
+			localStorage.setItem('icsUrl', migratedUrl);
+		}
+		icsUrl.set(migratedUrl);
 	}
 }
 
