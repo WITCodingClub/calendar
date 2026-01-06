@@ -904,24 +904,29 @@
         </div>
         <hr class="w-full border-outline-variant" />
         {#if tab == "a"}
-            <div class="flex flex-row gap-3 items-center">
-                <ConnectedButtons>
+            <div class="flex flex-row items-center pl-4 w-full">
+                <div class="flex-1"></div>
+                <div class="flex justify-center">
+                    <ConnectedButtons>
                     <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id?.toString()} onchange={async () => { const tid = terms?.current_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
                     <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
                     <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id?.toString()} onchange={async () => { const tid = terms?.next_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
                     <Button for="seg-b" variant="filled">{terms?.next_term.name}</Button>
-                </ConnectedButtons>
-                {#if processedData && !refreshing}
-                    <Button variant="tonal" onclick={() => refreshSchedule(selected)} disabled={refreshing || loading}>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                    </Button>
-                {:else if refreshing && processedData}
-                    <div class="flex flex-col items-center load-test gap-2 pl-4">
-                        <LoadingIndicator size={44} />
-                    </div>
-                {/if}
+                    </ConnectedButtons>
+                </div>
+                <div class="flex-1 flex justify-end gap-3 mr-4">
+                    {#if processedData && !refreshing}
+                        <Button variant="tonal" onclick={() => refreshSchedule(selected)} disabled={refreshing || loading}>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                        </Button>
+                    {:else if refreshing && processedData}
+                        <div class="flex flex-col items-center load-test gap-2 pl-4">
+                            <LoadingIndicator size={44} />
+                        </div>
+                    {/if}
+                </div>
             </div>
         {/if}
     {/if}
