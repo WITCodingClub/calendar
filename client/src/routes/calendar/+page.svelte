@@ -1161,7 +1161,8 @@
 
     :global(.unpeak button) {
         transform: scale(0.79);
-      
+    }
+
     :global(.load-test svg) {
         margin-top: -0.5rem !important;
         margin-left: -1.5rem !important;
