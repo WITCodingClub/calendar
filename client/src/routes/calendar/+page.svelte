@@ -852,16 +852,17 @@
 <div class="flex flex-col gap-4 justify-center items-center h-full mt-4 w-full px-3">
     {#if !processedData && tab === "a"}
         <div class="w-full flex flex-col items-center gap-6 p-6 bg-surface-container-lowest rounded-md shadow-md border border-outline-variant max-w-lg mx-auto">
-            <Button variant="tonal" square onclick={async () => { await goto('/'); }} >
-                <span class="flex flex-row gap-2 items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M9.184 4.457c.3.286.311.76.026 1.06L3.75 11.25H22a.75.75 0 0 1 0 1.5H3.75l5.46 5.733a.75.75 0 1 1-1.086 1.034l-6.667-7a.75.75 0 0 1 0-1.034l6.667-7a.75.75 0 0 1 1.06-.026"/></svg>
-                    Back
-                </span>
-            </Button>
-        </div>
-        <div class="w-full flex flex-col items-center gap-6 p-6 bg-surface-container-lowest rounded-md shadow-md border border-outline-variant max-w-lg mx-auto">
             <div class="flex flex-col gap-1 items-center">
-                <h1 class="text-xl font-bold text-primary text-center mb-1">Get Your Calendar</h1>
+                <div class="flex items-center w-full justify-center relative">
+                    <div class="absolute left-0">
+                        <Button variant="tonal" square onclick={async () => { await goto('/'); }} >
+                            <span class="flex flex-row gap-2 items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M9.184 4.457c.3.286.311.76.026 1.06L3.75 11.25H22a.75.75 0 0 1 0 1.5H3.75l5.46 5.733a.75.75 0 1 1-1.086 1.034l-6.667-7a.75.75 0 0 1 0-1.034l6.667-7a.75.75 0 0 1 1.06-.026"/></svg>
+                            </span>
+                        </Button>
+                    </div>
+                    <h1 class="text-xl font-bold text-primary text-center mb-1">Get Your Calendar</h1>
+                </div>
                 <p class="text-md text-secondary text-center">
                     Click the button below to fetch your classes and generate your calendar.
                     If you've linked your Google Calendar, your events will be added there as well!
