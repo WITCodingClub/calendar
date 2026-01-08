@@ -222,7 +222,7 @@
         } catch (e) {
             console.error('Failed to update notification settings:', e);
             snackbar('Failed to update notification settings', undefined, true);
-            notificationsDisabled = !disabled; // Revert
+            notificationsDisabled = !disabled; 
         }
     }
 
