@@ -1,342 +1,431 @@
 {
-    "ics_url": "https://heron-selected-literally.ngrok-free.app/calendar/vLed02hE7ld-Yj8-8A6Dbk8rDBaKWXRq9K9Iw6Ndxls.ics",
-    "classes": [
+    "ics_url": "https://server-calendar.witcc.dev/calendar/rzA_diz_odPwgqC_mzEDkONvvRT_lwekCVu0lU9O5uY.ics",
+    "removed_enrollments": 0,
+    "removed_courses": [],
+    "processed_courses": [
         {
-            "title": "Discrete Mathematics",
-            "course_number": 2300,
-            "schedule_type": "lecture",
-            "term": {
-                "uid": 202610,
-                "season": "fall",
-                "year": 2025
-            },
-            "professor": {
-                "first_name": "Gabe",
-                "last_name": "Cunningham",
-                "email": "cunninghamg1@wit.edu"
-            },
-            "meeting_times": [
-                {
-                    "begin_time": "10:00",
-                    "end_time": "11:45",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
-                    "location": {
-                        "building": {
-                            "name": "Wentworth Hall",
-                            "abbreviation": "WENTW"
-                        },
-                        "room": "214"
-                    },
-                    "monday": false,
-                    "tuesday": false,
-                    "wednesday": true,
-                    "thursday": false,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
-                },
-                {
-                    "begin_time": "10:00",
-                    "end_time": "11:45",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
-                    "location": {
-                        "building": {
-                            "name": "Wentworth Hall",
-                            "abbreviation": "WENTW"
-                        },
-                        "room": "214"
-                    },
-                    "monday": false,
-                    "tuesday": false,
-                    "wednesday": false,
-                    "thursday": false,
-                    "friday": true,
-                    "saturday": false,
-                    "sunday": false
-                }
-            ]
-        },
-        {
-            "title": "Computer Science I",
-            "course_number": 1000,
-            "schedule_type": "lecture",
-            "term": {
-                "uid": 202610,
-                "season": "fall",
-                "year": 2025
-            },
-            "professor": {
-                "first_name": "Micah",
-                "last_name": "Schuster",
-                "email": "schusterm@wit.edu"
-            },
-            "meeting_times": [
-                {
-                    "begin_time": "08:00",
-                    "end_time": "09:15",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
-                    "location": {
-                        "building": {
-                            "name": "Wentworth Hall",
-                            "abbreviation": "WENTW"
-                        },
-                        "room": "306"
-                    },
-                    "monday": true,
-                    "tuesday": false,
-                    "wednesday": false,
-                    "thursday": false,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
-                },
-                {
-                    "begin_time": "08:00",
-                    "end_time": "09:15",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
-                    "location": {
-                        "building": {
-                            "name": "Wentworth Hall",
-                            "abbreviation": "WENTW"
-                        },
-                        "room": "306"
-                    },
-                    "monday": false,
-                    "tuesday": false,
-                    "wednesday": true,
-                    "thursday": false,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
-                }
-            ]
-        },
-        {
-            "title": "Computer Science I - Lab",
-            "course_number": 1000,
+            "id": 17292,
+            "title": "Computer Organization",
+            "crn": 28846,
+            "subject": "Computer Science (COMP)",
+            "course_number": 1200,
             "schedule_type": "laboratory",
             "term": {
-                "uid": 202610,
-                "season": "fall",
-                "year": 2025
-            },
-            "professor": {
-                "first_name": "Micah",
-                "last_name": "Schuster",
-                "email": "schusterm@wit.edu"
+                "uid": 202620,
+                "season": "spring",
+                "year": 2026
             },
             "meeting_times": [
                 {
-                    "begin_time": "08:00",
-                    "end_time": "09:45",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "begin_time": "13:00",
+                    "end_time": "14:45",
+                    "start_date": "2026-01-06T00:00:00.000-05:00",
+                    "end_date": "2026-04-14T23:59:59.000-04:00",
+                    "day_of_week": "friday",
+                    "location": {
+                        "building": {
+                            "name": "Watson Hall",
+                            "abbreviation": "WATSN"
+                        },
+                        "room": "001"
+                    }
+                },
+                {
+                    "begin_time": "13:00",
+                    "end_time": "14:45",
+                    "start_date": "2026-01-09T00:00:00.000-05:00",
+                    "end_date": "2026-01-09T23:59:59.000-05:00",
+                    "day_of_week": "friday",
+                    "location": {
+                        "building": {
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
+                        },
+                        "room": "000"
+                    }
+                }
+            ]
+        },
+        {
+            "id": 17960,
+            "title": "Calculus 2 A",
+            "crn": 28738,
+            "subject": "Mathematics (MATH)",
+            "course_number": 1876,
+            "schedule_type": "lecture",
+            "term": {
+                "uid": 202620,
+                "season": "spring",
+                "year": 2026
+            },
+            "meeting_times": [
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-01-06T00:00:00.000-05:00",
+                    "end_date": "2026-02-17T23:59:59.000-05:00",
+                    "day_of_week": "monday",
+                    "location": {
+                        "building": {
+                            "name": "Willson Hall",
+                            "abbreviation": "WILLS"
+                        },
+                        "room": "102"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-01-06T00:00:00.000-05:00",
+                    "end_date": "2026-02-17T23:59:59.000-05:00",
+                    "day_of_week": "wednesday",
+                    "location": {
+                        "building": {
+                            "name": "Willson Hall",
+                            "abbreviation": "WILLS"
+                        },
+                        "room": "102"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-01-06T00:00:00.000-05:00",
+                    "end_date": "2026-02-17T23:59:59.000-05:00",
+                    "day_of_week": "friday",
+                    "location": {
+                        "building": {
+                            "name": "Willson Hall",
+                            "abbreviation": "WILLS"
+                        },
+                        "room": "102"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-09T23:59:59.000-05:00",
+                    "day_of_week": "monday",
+                    "location": {
+                        "building": {
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
+                        },
+                        "room": "000"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-09T23:59:59.000-05:00",
+                    "day_of_week": "wednesday",
+                    "location": {
+                        "building": {
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
+                        },
+                        "room": "000"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-09T23:59:59.000-05:00",
+                    "day_of_week": "friday",
+                    "location": {
+                        "building": {
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
+                        },
+                        "room": "000"
+                    }
+                }
+            ]
+        },
+        {
+            "id": 17984,
+            "title": "Calculus 2 B",
+            "crn": 28757,
+            "subject": "Mathematics (MATH)",
+            "course_number": 1877,
+            "schedule_type": "lecture",
+            "term": {
+                "uid": 202620,
+                "season": "spring",
+                "year": 2026
+            },
+            "meeting_times": [
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-02-18T00:00:00.000-05:00",
+                    "end_date": "2026-04-14T23:59:59.000-04:00",
+                    "day_of_week": "monday",
+                    "location": {
+                        "building": {
+                            "name": "Willson Hall",
+                            "abbreviation": "WILLS"
+                        },
+                        "room": "102"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-02-18T00:00:00.000-05:00",
+                    "end_date": "2026-04-14T23:59:59.000-04:00",
+                    "day_of_week": "wednesday",
+                    "location": {
+                        "building": {
+                            "name": "Willson Hall",
+                            "abbreviation": "WILLS"
+                        },
+                        "room": "102"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-02-18T00:00:00.000-05:00",
+                    "end_date": "2026-04-14T23:59:59.000-04:00",
+                    "day_of_week": "friday",
+                    "location": {
+                        "building": {
+                            "name": "Willson Hall",
+                            "abbreviation": "WILLS"
+                        },
+                        "room": "102"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-09T23:59:59.000-05:00",
+                    "day_of_week": "monday",
+                    "location": {
+                        "building": {
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
+                        },
+                        "room": "000"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-09T23:59:59.000-05:00",
+                    "day_of_week": "wednesday",
+                    "location": {
+                        "building": {
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
+                        },
+                        "room": "000"
+                    }
+                },
+                {
+                    "begin_time": "09:30",
+                    "end_time": "10:40",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-09T23:59:59.000-05:00",
+                    "day_of_week": "friday",
+                    "location": {
+                        "building": {
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
+                        },
+                        "room": "000"
+                    }
+                }
+            ]
+        },
+        {
+            "id": 17271,
+            "title": "Computer Science II",
+            "crn": 28823,
+            "subject": "Computer Science (COMP)",
+            "course_number": 1050,
+            "schedule_type": "lecture",
+            "term": {
+                "uid": 202620,
+                "season": "spring",
+                "year": 2026
+            },
+            "meeting_times": [
+                {
+                    "begin_time": "11:00",
+                    "end_time": "12:15",
+                    "start_date": "2026-01-06T00:00:00.000-05:00",
+                    "end_date": "2026-04-14T23:59:59.000-04:00",
+                    "day_of_week": "monday",
+                    "location": {
+                        "building": {
+                            "name": "Dobbs Hall",
+                            "abbreviation": "DOBBS"
+                        },
+                        "room": "203"
+                    }
+                },
+                {
+                    "begin_time": "11:00",
+                    "end_time": "12:15",
+                    "start_date": "2026-01-06T00:00:00.000-05:00",
+                    "end_date": "2026-04-14T23:59:59.000-04:00",
+                    "day_of_week": "wednesday",
+                    "location": {
+                        "building": {
+                            "name": "Dobbs Hall",
+                            "abbreviation": "DOBBS"
+                        },
+                        "room": "203"
+                    }
+                },
+                {
+                    "begin_time": "11:00",
+                    "end_time": "12:15",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-07T23:59:59.000-05:00",
+                    "day_of_week": "monday",
+                    "location": {
+                        "building": {
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
+                        },
+                        "room": "000"
+                    }
+                },
+                {
+                    "begin_time": "11:00",
+                    "end_time": "12:15",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-07T23:59:59.000-05:00",
+                    "day_of_week": "wednesday",
+                    "location": {
+                        "building": {
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
+                        },
+                        "room": "000"
+                    }
+                }
+            ]
+        },
+        {
+            "id": 17272,
+            "title": "Computer Science II",
+            "crn": 28824,
+            "subject": "Computer Science (COMP)",
+            "course_number": 1050,
+            "schedule_type": "laboratory",
+            "term": {
+                "uid": 202620,
+                "season": "spring",
+                "year": 2026
+            },
+            "meeting_times": [
+                {
+                    "begin_time": "10:00",
+                    "end_time": "11:45",
+                    "start_date": "2026-01-06T00:00:00.000-05:00",
+                    "end_date": "2026-04-14T23:59:59.000-04:00",
+                    "day_of_week": "thursday",
                     "location": {
                         "building": {
                             "name": "Wentworth Hall",
                             "abbreviation": "WENTW"
                         },
                         "room": "207"
-                    },
-                    "monday": false,
-                    "tuesday": false,
-                    "wednesday": false,
-                    "thursday": true,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
-                }
-            ]
-        },
-        {
-            "title": "English II",
-            "course_number": 2200,
-            "schedule_type": "lecture",
-            "term": {
-                "uid": 202610,
-                "season": "fall",
-                "year": 2025
-            },
-            "professor": {
-                "first_name": "Divya",
-                "last_name": "Nair",
-                "email": "naird2@wit.edu"
-            },
-            "meeting_times": [
-                {
-                    "begin_time": "15:00",
-                    "end_time": "16:45",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
-                    "location": {
-                        "building": {
-                            "name": "Rubenstein Hall",
-                            "abbreviation": "RBSTN"
-                        },
-                        "room": "105"
-                    },
-                    "monday": true,
-                    "tuesday": false,
-                    "wednesday": false,
-                    "thursday": false,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
+                    }
                 },
                 {
-                    "begin_time": "15:00",
-                    "end_time": "16:45",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "begin_time": "10:00",
+                    "end_time": "11:45",
+                    "start_date": "2026-01-08T00:00:00.000-05:00",
+                    "end_date": "2026-01-08T23:59:59.000-05:00",
+                    "day_of_week": "thursday",
                     "location": {
                         "building": {
-                            "name": "Rubenstein Hall",
-                            "abbreviation": "RBSTN"
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
                         },
-                        "room": "105"
-                    },
-                    "monday": false,
-                    "tuesday": false,
-                    "wednesday": false,
-                    "thursday": true,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
+                        "room": "000"
+                    }
                 }
             ]
         },
         {
-            "title": "Foundations Of Calculus",
-            "course_number": 1525,
+            "id": 17291,
+            "title": "Computer Organization",
+            "crn": 28845,
+            "subject": "Computer Science (COMP)",
+            "course_number": 1200,
             "schedule_type": "lecture",
             "term": {
-                "uid": 202610,
-                "season": "fall",
-                "year": 2025
-            },
-            "professor": {
-                "first_name": "Mark",
-                "last_name": "Mixer",
-                "email": "mixerm@wit.edu"
+                "uid": 202620,
+                "season": "spring",
+                "year": 2026
             },
             "meeting_times": [
                 {
-                    "begin_time": "12:30",
-                    "end_time": "13:45",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "begin_time": "14:00",
+                    "end_time": "15:15",
+                    "start_date": "2026-01-06T00:00:00.000-05:00",
+                    "end_date": "2026-04-14T23:59:59.000-04:00",
+                    "day_of_week": "monday",
                     "location": {
                         "building": {
-                            "name": "Beatty Hall",
-                            "abbreviation": "BEATT"
+                            "name": "Wentworth Hall",
+                            "abbreviation": "WENTW"
                         },
-                        "room": "402"
-                    },
-                    "monday": true,
-                    "tuesday": false,
-                    "wednesday": false,
-                    "thursday": false,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
+                        "room": "312"
+                    }
                 },
                 {
-                    "begin_time": "12:30",
-                    "end_time": "13:45",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "begin_time": "14:00",
+                    "end_time": "15:15",
+                    "start_date": "2026-01-06T00:00:00.000-05:00",
+                    "end_date": "2026-04-14T23:59:59.000-04:00",
+                    "day_of_week": "wednesday",
                     "location": {
                         "building": {
-                            "name": "Beatty Hall",
-                            "abbreviation": "BEATT"
+                            "name": "Wentworth Hall",
+                            "abbreviation": "WENTW"
                         },
-                        "room": "402"
-                    },
-                    "monday": false,
-                    "tuesday": false,
-                    "wednesday": true,
-                    "thursday": false,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
-                }
-            ]
-        },
-        {
-            "title": "Foundations Of Calculus - Lab",
-            "course_number": 1525,
-            "schedule_type": "laboratory",
-            "term": {
-                "uid": 202610,
-                "season": "fall",
-                "year": 2025
-            },
-            "professor": {
-                "first_name": "Mark",
-                "last_name": "Mixer",
-                "email": "mixerm@wit.edu"
-            },
-            "meeting_times": [
+                        "room": "312"
+                    }
+                },
                 {
-                    "begin_time": "13:00",
-                    "end_time": "14:45",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "begin_time": "14:00",
+                    "end_time": "15:15",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-07T23:59:59.000-05:00",
+                    "day_of_week": "monday",
                     "location": {
                         "building": {
-                            "name": "Beatty Hall",
-                            "abbreviation": "BEATT"
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
                         },
-                        "room": "402"
-                    },
-                    "monday": false,
-                    "tuesday": false,
-                    "wednesday": false,
-                    "thursday": true,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
-                }
-            ]
-        },
-        {
-            "title": "Seminar In Foundations Of Calc",
-            "course_number": 3800,
-            "schedule_type": "laboratory",
-            "term": {
-                "uid": 202610,
-                "season": "fall",
-                "year": 2025
-            },
-            "professor": {
-                "first_name": "Everett",
-                "last_name": "Meike",
-                "email": "meikee@wit.edu"
-            },
-            "meeting_times": [
+                        "room": "000"
+                    }
+                },
                 {
-                    "begin_time": "08:00",
-                    "end_time": "09:45",
-                    "start_date": "2025-09-02T00:00:00.000-04:00",
-                    "end_date": "2025-12-11T23:59:59.000-05:00",
+                    "begin_time": "14:00",
+                    "end_time": "15:15",
+                    "start_date": "2026-01-05T00:00:00.000-05:00",
+                    "end_date": "2026-01-07T23:59:59.000-05:00",
+                    "day_of_week": "wednesday",
                     "location": {
                         "building": {
-                            "name": "Beatty Hall",
-                            "abbreviation": "BEATT"
+                            "name": "To Be Determined",
+                            "abbreviation": "TBD"
                         },
-                        "room": "402"
-                    },
-                    "monday": false,
-                    "tuesday": true,
-                    "wednesday": false,
-                    "thursday": false,
-                    "friday": false,
-                    "saturday": false,
-                    "sunday": false
+                        "room": "000"
+                    }
                 }
             ]
         }
