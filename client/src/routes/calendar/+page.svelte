@@ -202,6 +202,80 @@
         { key: 'sunday', label: 'Sunday', abbr: 'Su', order: 6 }
     ];
 
+    type PositionedMeeting = {
+        course: Course;
+        meeting: MeetingTime;
+        startOffset: number;
+        width: number;
+        startTotal: number;
+        endTotal: number;
+        bgColor: string;
+        textColor: string;
+        stackIndex: number;
+        overlapCount: number;
+    };
+
+    const stackGapPct = 2;
+
+    let stackedMeetings = $derived.by(() => {
+        if (!processedData) return { byDay: {}, maxStacksByDay: {} };
+        const byDay: Record<string, PositionedMeeting[]> = {};
+        const maxStacksByDay: Record<string, number> = {};
+        for (const { key } of dayOrder) {
+            byDay[key] = [];
+            maxStacksByDay[key] = 1;
+        }
+        for (const course of processedData) {
+            const isLab = course.schedule_type.toLowerCase() === 'laboratory';
+            const bgColorBase = isLab ? labColor : lectureColor;
+            for (const meeting of course.meeting_times) {
+                for (const { key } of dayOrder) {
+                    if (!meeting[key as keyof MeetingTime]) continue;
+                    const startHour = parseInt(meeting.begin_time.split(':')[0]);
+                    const startMin = parseInt(meeting.begin_time.split(':')[1]);
+                    const endHour = parseInt(meeting.end_time.split(':')[0]);
+                    const endMin = parseInt(meeting.end_time.split(':')[1]);
+                    const startTotal = startHour * 60 + startMin;
+                    const endTotal = endHour * 60 + endMin;
+                    const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8;
+                    const width = (endTotal - startTotal) / 60 * 8;
+                    const bgColor = meeting.color ?? bgColorBase;
+                    const textColor = getTextColor(bgColor);
+                    byDay[key].push({ course, meeting, startOffset, width, startTotal, endTotal, bgColor, textColor, stackIndex: 0, overlapCount: 1 });
+                }
+            }
+        }
+        for (const { key } of dayOrder) {
+            const arr = byDay[key];
+            arr.sort((a, b) => (a.startTotal === b.startTotal ? a.endTotal - b.endTotal : a.startTotal - b.startTotal));
+            const stackEnds: number[] = [];
+            const active: PositionedMeeting[] = [];
+            for (const item of arr) {
+                for (let i = active.length - 1; i >= 0; i--) {
+                    if (item.startTotal >= active[i].endTotal) {
+                        active.splice(i, 1);
+                    }
+                }
+                const currentOverlap = active.length + 1;
+                for (const a of active) {
+                    a.overlapCount = Math.max(a.overlapCount, currentOverlap);
+                }
+                item.overlapCount = currentOverlap;
+                let stack = stackEnds.findIndex((end) => item.startTotal >= end);
+                if (stack === -1) {
+                    stack = stackEnds.length;
+                    stackEnds.push(item.endTotal);
+                } else {
+                    stackEnds[stack] = item.endTotal;
+                }
+                item.stackIndex = stack;
+                active.push(item);
+            }
+            maxStacksByDay[key] = Math.max(...arr.map((m) => m.overlapCount), 1);
+        }
+        return { byDay, maxStacksByDay };
+    });
+
     function getLatestEndHour(courses: Course[]): number {
         let latestHour = 8;
 
@@ -957,6 +1031,7 @@
                         </div>
 
                         {#each dayOrder.slice(0, 5) as day}
+                            {@const dayEvents = stackedMeetings.byDay?.[day.key] ?? []}
                             <div class="flex flex-row flex-1 min-h-[120px] border-b border-outline-variant relative">
                                 <div class="w-24 border-r border-outline-variant flex items-center justify-center bg-surface-container-low left-0 z-5">
                                     <span class="font-medium text-sm">{day.label}</span>
@@ -967,32 +1042,19 @@
                                         <div class="w-32 border-r border-outline-variant"></div>
                                     {/each}
 
-                                    {#each processedData as course}
-                                        {#each course.meeting_times as meeting}
-                                            {#if meeting[day.key as keyof MeetingTime]}
-                                                {@const startHour = parseInt(meeting.begin_time.split(':')[0])}
-                                                {@const startMin = parseInt(meeting.begin_time.split(':')[1])}
-                                                {@const endHour = parseInt(meeting.end_time.split(':')[0])}
-                                                {@const endMin = parseInt(meeting.end_time.split(':')[1])}
-                                                {@const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8}
-                                                {@const width = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) / 60 * 8}
-                                                {@const isLab = course.schedule_type.toLowerCase() === 'laboratory'}
-												{@const bgColorBase = isLab ? labColor : lectureColor}
-												{@const bgColor = meeting.color ?? bgColorBase}
-                                                {@const textColor = getTextColor(bgColor)}
-
-
-                                                <button
-                                                    class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
-                                                    style="background-color: {bgColor}; color: {textColor}; left: {startOffset}rem; width: {width}rem; border-color: {bgColor};"
-                                                    onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day; getEventPerfs(meeting.id)}}
-                                                >
-													<div class="font-medium truncate">{meeting.title_overrides?.[day.key] ?? course.title}</div>
-													<div class="opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>
-                                                    <div class="opacity-70 text-[10px]">{meeting.location.building.abbreviation} {meeting.location.room}</div>
-                                                </button>
-                                            {/if}
-                                        {/each}
+                                    {#each dayEvents as item (item.meeting.id)}
+                                        {@const overlapCount = Math.max(item.overlapCount ?? 1, 1)}
+                                        {@const heightPct = Math.max((100 - (overlapCount + 1) * stackGapPct) / overlapCount, 0)}
+                                        {@const topPct = stackGapPct + item.stackIndex * (heightPct + stackGapPct)}
+                                        <button
+                                            class="absolute rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
+                                            style={`background-color:${item.bgColor}; color:${item.textColor}; left:${item.startOffset}rem; width:${item.width}rem; top:${topPct}%; height:${heightPct}%; border-color:${item.bgColor};`}
+                                            onclick={() => {activeCourse = item.course; activeMeeting = item.meeting; activeDay = day; getEventPerfs(item.meeting.id)}}
+                                        >
+											<div class="font-medium truncate">{item.meeting.title_overrides?.[day.key] ?? item.course.title}</div>
+											<div class="opacity-80">{convertTo12Hour(item.meeting.begin_time)} - {convertTo12Hour(item.meeting.end_time)}</div>
+                                            <div class="opacity-70 text-[10px]">{item.meeting.location.building.abbreviation} {item.meeting.location.room}</div>
+                                        </button>
                                     {/each}
                                 </div>
                             </div>
