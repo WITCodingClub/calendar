@@ -211,13 +211,10 @@
         notificationsDisabled = disabled;
         try {
             if (disabled) {
-                await API.setGlobalCalendarPreference({ reminder_settings: [] });
+                
                 snackbar('All notifications disabled', undefined, true);
             } else {
-                await API.setGlobalCalendarPreference({
-                    reminder_settings: [{ time: "30", type: "minutes", method: "notification" }]
-                });
-                snackbar('Default notifications restored (30 min before)', undefined, true);
+
             }
         } catch (e) {
             console.error('Failed to update notification settings:', e);
