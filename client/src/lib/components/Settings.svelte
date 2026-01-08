@@ -32,10 +32,6 @@
                     email = await API.getUserEmail().then(data => data.email);
                     currentEnvironment = await EnvironmentManager.getCurrentEnvironment();
                     authenticatedEnvironments = await EnvironmentManager.getAuthenticatedEnvironments();
-                    // Reload feature flags after environment switch
-                    await featureFlags.reload();
-                    showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
-                    showClearDataButton = featureFlags.isEnabledSync('debugMode');
                 } catch (error) {
                     console.error('Failed to refetch email/env after environment switch:', error);
                 }
@@ -84,36 +80,6 @@
 
         currentEnvironment = await EnvironmentManager.getCurrentEnvironment();
         authenticatedEnvironments = await EnvironmentManager.getAuthenticatedEnvironments();
-
-        // Multiple event handlers to catch different scenarios
-        const reloadFlags = async () => {
-            await featureFlags.reload();
-            showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
-            showClearDataButton = featureFlags.isEnabledSync('debugMode');
-        };
-
-        // 1. Window focus (when clicking back to the extension)
-        window.addEventListener('focus', reloadFlags);
-
-        // 2. Visibility change (when tab becomes visible)
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                reloadFlags();
-            }
-        });
-
-        // 3. Periodic check every 30 seconds while page is visible
-        const pollInterval = setInterval(() => {
-            if (!document.hidden) {
-                reloadFlags();
-            }
-        }, 30000);
-
-        return () => {
-            window.removeEventListener('focus', reloadFlags);
-            document.removeEventListener('visibilitychange', reloadFlags);
-            clearInterval(pollInterval);
-        };
     });
 
     let defaultColorLecture = $derived(userSettings?.default_color_lecture ?? "");
