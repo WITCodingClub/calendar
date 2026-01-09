@@ -1,15 +1,23 @@
 {
   "manifest_version": 3,
   "name": "WIT-Calendar",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "A Chrome extension to import WIT classes into your calendar!",
   "side_panel": {
     "default_path": "index.html"
   },
   "content_scripts": [
     {
-      "matches": ["https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory", "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory", "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/reset?term=", "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=", "https://selfservice.wit.edu/BannerGeneralSsb/ssb/PersonalInformationDetails/getEmails"],
-      "js": ["scripts/init.js"]
+      "matches": [
+        "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory",
+        "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/registrationHistory",
+        "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/registrationHistory/reset?term=",
+        "https://selfservice.wit.edu/StudentRegistrationSsb/ssb/classRegistration/getRegistrationEvents?termFilter=",
+        "https://selfservice.wit.edu/BannerGeneralSsb/ssb/PersonalInformationDetails/getEmails"
+      ],
+      "js": [
+        "scripts/init.js"
+      ]
     }
   ],
   "background": {
@@ -21,7 +29,6 @@
     "activeTab",
     "tabs",
     "storage",
-    "webNavigation",
     "identity",
     "identity.email"
   ],
@@ -31,6 +38,6 @@
   "host_permissions": [
     "https://selfservice.wit.edu/*",
     "https://*.witcc.dev/*",
-    "https://heron-selected-literally.ngrok-free.app/*"
+    "https://witcal.tun.hogwarts.dev/*"
   ]
 }

@@ -202,6 +202,80 @@
         { key: 'sunday', label: 'Sunday', abbr: 'Su', order: 6 }
     ];
 
+    type PositionedMeeting = {
+        course: Course;
+        meeting: MeetingTime;
+        startOffset: number;
+        width: number;
+        startTotal: number;
+        endTotal: number;
+        bgColor: string;
+        textColor: string;
+        stackIndex: number;
+        overlapCount: number;
+    };
+
+    const stackGapPct = 2;
+
+    let stackedMeetings = $derived.by(() => {
+        if (!processedData) return { byDay: {}, maxStacksByDay: {} };
+        const byDay: Record<string, PositionedMeeting[]> = {};
+        const maxStacksByDay: Record<string, number> = {};
+        for (const { key } of dayOrder) {
+            byDay[key] = [];
+            maxStacksByDay[key] = 1;
+        }
+        for (const course of processedData) {
+            const isLab = course.schedule_type.toLowerCase() === 'laboratory';
+            const bgColorBase = isLab ? labColor : lectureColor;
+            for (const meeting of course.meeting_times) {
+                for (const { key } of dayOrder) {
+                    if (!meeting[key as keyof MeetingTime]) continue;
+                    const startHour = parseInt(meeting.begin_time.split(':')[0]);
+                    const startMin = parseInt(meeting.begin_time.split(':')[1]);
+                    const endHour = parseInt(meeting.end_time.split(':')[0]);
+                    const endMin = parseInt(meeting.end_time.split(':')[1]);
+                    const startTotal = startHour * 60 + startMin;
+                    const endTotal = endHour * 60 + endMin;
+                    const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8;
+                    const width = (endTotal - startTotal) / 60 * 8;
+                    const bgColor = meeting.color ?? bgColorBase;
+                    const textColor = getTextColor(bgColor);
+                    byDay[key].push({ course, meeting, startOffset, width, startTotal, endTotal, bgColor, textColor, stackIndex: 0, overlapCount: 1 });
+                }
+            }
+        }
+        for (const { key } of dayOrder) {
+            const arr = byDay[key];
+            arr.sort((a, b) => (a.startTotal === b.startTotal ? a.endTotal - b.endTotal : a.startTotal - b.startTotal));
+            const stackEnds: number[] = [];
+            const active: PositionedMeeting[] = [];
+            for (const item of arr) {
+                for (let i = active.length - 1; i >= 0; i--) {
+                    if (item.startTotal >= active[i].endTotal) {
+                        active.splice(i, 1);
+                    }
+                }
+                const currentOverlap = active.length + 1;
+                for (const a of active) {
+                    a.overlapCount = Math.max(a.overlapCount, currentOverlap);
+                }
+                item.overlapCount = currentOverlap;
+                let stack = stackEnds.findIndex((end) => item.startTotal >= end);
+                if (stack === -1) {
+                    stack = stackEnds.length;
+                    stackEnds.push(item.endTotal);
+                } else {
+                    stackEnds[stack] = item.endTotal;
+                }
+                item.stackIndex = stack;
+                active.push(item);
+            }
+            maxStacksByDay[key] = Math.max(...arr.map((m) => m.overlapCount), 1);
+        }
+        return { byDay, maxStacksByDay };
+    });
+
     function getLatestEndHour(courses: Course[]): number {
         let latestHour = 8;
 
@@ -853,7 +927,16 @@
     {#if !processedData && tab === "a"}
         <div class="w-full flex flex-col items-center gap-6 p-6 bg-surface-container-lowest rounded-md shadow-md border border-outline-variant max-w-lg mx-auto">
             <div class="flex flex-col gap-1 items-center">
-                <h1 class="text-xl font-bold text-primary text-center mb-1">Get Your Calendar</h1>
+                <div class="flex items-center w-full justify-center relative">
+                    <div class="absolute left-0 unpeak">
+                        <Button variant="tonal" square onclick={async () => { await goto('/'); }} >
+                            <span class="flex flex-row gap-2 items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M9.184 4.457c.3.286.311.76.026 1.06L3.75 11.25H22a.75.75 0 0 1 0 1.5H3.75l5.46 5.733a.75.75 0 1 1-1.086 1.034l-6.667-7a.75.75 0 0 1 0-1.034l6.667-7a.75.75 0 0 1 1.06-.026"/></svg>
+                            </span>
+                        </Button>
+                    </div>
+                    <h1 class="text-xl font-bold text-primary text-center mb-1">Get Your Calendar</h1>
+                </div>
                 <p class="text-md text-secondary text-center">
                     Click the button below to fetch your classes and generate your calendar.
                     If you've linked your Google Calendar, your events will be added there as well!
@@ -904,25 +987,29 @@
         </div>
         <hr class="w-full border-outline-variant" />
         {#if tab == "a"}
-            <div class="flex flex-row gap-3 items-center">
-                <ConnectedButtons>
+            <div class="flex flex-row items-center pl-4 w-full">
+                <div class="flex-1"></div>
+                <div class="flex justify-center">
+                    <ConnectedButtons>
                     <input type="radio" name="seg" id="seg-a" bind:group={selected} value={terms?.current_term.id?.toString()} onchange={async () => { const tid = terms?.current_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
                     <Button for="seg-a" variant="filled">{terms?.current_term.name}</Button>
                     <input type="radio" name="seg" id="seg-b" bind:group={selected} value={terms?.next_term.id?.toString()} onchange={async () => { const tid = terms?.next_term.id?.toString(); if (tid && !$storedProcessedData.some((d) => String(d.termId) === tid) && !attemptedTerms.has(tid) && !loading) { const next = new Set(attemptedTerms); next.add(tid); attemptedTerms = next; await ensureProcessedForTerm(tid); } }} />
                     <Button for="seg-b" variant="filled">{terms?.next_term.name}</Button>
-                </ConnectedButtons>
-                {#if processedData}
-                    <Button variant="tonal" onclick={() => refreshSchedule(selected)} disabled={refreshing || loading}>
-                        {#if refreshing}
-                            <LoadingIndicator size={20} />
-                        {:else}
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span class="ml-1">Refresh</span>
-                        {/if}
-                    </Button>
-                {/if}
+                    </ConnectedButtons>
+                </div>
+                <div class="flex-1 flex justify-end gap-3 mr-4">
+                    {#if processedData && !refreshing}
+                        <Button variant="tonal" onclick={() => refreshSchedule(selected)} disabled={refreshing || loading}>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                        </Button>
+                    {:else if refreshing && processedData}
+                        <div class="flex flex-col items-center load-test gap-2 pl-4">
+                            <LoadingIndicator size={44} />
+                        </div>
+                    {/if}
+                </div>
             </div>
         {/if}
     {/if}
@@ -944,6 +1031,7 @@
                         </div>
 
                         {#each dayOrder.slice(0, 5) as day}
+                            {@const dayEvents = stackedMeetings.byDay?.[day.key] ?? []}
                             <div class="flex flex-row flex-1 min-h-[120px] border-b border-outline-variant relative">
                                 <div class="w-24 border-r border-outline-variant flex items-center justify-center bg-surface-container-low left-0 z-5">
                                     <span class="font-medium text-sm">{day.label}</span>
@@ -954,32 +1042,19 @@
                                         <div class="w-32 border-r border-outline-variant"></div>
                                     {/each}
 
-                                    {#each processedData as course}
-                                        {#each course.meeting_times as meeting}
-                                            {#if meeting[day.key as keyof MeetingTime]}
-                                                {@const startHour = parseInt(meeting.begin_time.split(':')[0])}
-                                                {@const startMin = parseInt(meeting.begin_time.split(':')[1])}
-                                                {@const endHour = parseInt(meeting.end_time.split(':')[0])}
-                                                {@const endMin = parseInt(meeting.end_time.split(':')[1])}
-                                                {@const startOffset = ((startHour - 8) * 60 + startMin) / 60 * 8}
-                                                {@const width = ((endHour * 60 + endMin) - (startHour * 60 + startMin)) / 60 * 8}
-                                                {@const isLab = course.schedule_type.toLowerCase() === 'laboratory'}
-												{@const bgColorBase = isLab ? labColor : lectureColor}
-												{@const bgColor = meeting.color ?? bgColorBase}
-                                                {@const textColor = getTextColor(bgColor)}
-
-
-                                                <button
-                                                    class="absolute top-1 bottom-1 rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
-                                                    style="background-color: {bgColor}; color: {textColor}; left: {startOffset}rem; width: {width}rem; border-color: {bgColor};"
-                                                    onclick={() => {activeCourse = course; activeMeeting = meeting; activeDay = day; getEventPerfs(meeting.id)}}
-                                                >
-													<div class="font-medium truncate">{meeting.title_overrides?.[day.key] ?? course.title}</div>
-													<div class="opacity-80">{convertTo12Hour(meeting.begin_time)} - {convertTo12Hour(meeting.end_time)}</div>
-                                                    <div class="opacity-70 text-[10px]">{meeting.location.building.abbreviation} {meeting.location.room}</div>
-                                                </button>
-                                            {/if}
-                                        {/each}
+                                    {#each dayEvents as item (item.meeting.id)}
+                                        {@const overlapCount = Math.max(item.overlapCount ?? 1, 1)}
+                                        {@const heightPct = Math.max((100 - (overlapCount + 1) * stackGapPct) / overlapCount, 0)}
+                                        {@const topPct = stackGapPct + item.stackIndex * (heightPct + stackGapPct)}
+                                        <button
+                                            class="absolute rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
+                                            style={`background-color:${item.bgColor}; color:${item.textColor}; left:${item.startOffset}rem; width:${item.width}rem; top:${topPct}%; height:${heightPct}%; border-color:${item.bgColor};`}
+                                            onclick={() => {activeCourse = item.course; activeMeeting = item.meeting; activeDay = day; getEventPerfs(item.meeting.id)}}
+                                        >
+											<div class="font-medium truncate">{item.meeting.title_overrides?.[day.key] ?? item.course.title}</div>
+											<div class="opacity-80">{convertTo12Hour(item.meeting.begin_time)} - {convertTo12Hour(item.meeting.end_time)}</div>
+                                            <div class="opacity-70 text-[10px]">{item.meeting.location.building.abbreviation} {item.meeting.location.room}</div>
+                                        </button>
                                     {/each}
                                 </div>
                             </div>
@@ -1144,5 +1219,14 @@
 
     :global(.peak button) {
         height: 2.5rem !important;
+    }
+
+    :global(.unpeak button) {
+        transform: scale(0.79);
+    }
+
+    :global(.load-test svg) {
+        margin-top: -0.5rem !important;
+        margin-left: -1.5rem !important;
     }
 </style>
