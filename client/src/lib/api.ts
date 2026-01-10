@@ -260,6 +260,47 @@ export class API {
         return response.json();
     }
 
+    // Notifications DND (Do Not Disturb) mode
+    public static async getNotificationStatus(): Promise<{ notifications_disabled: boolean; notifications_disabled_until: string | null }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/user/notifications_status`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    }
+
+    public static async disableNotifications(duration?: number): Promise<{ notifications_disabled: boolean; notifications_disabled_until: string }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const body = duration ? JSON.stringify({ duration }) : undefined;
+        const response = await fetch(`${baseUrl}/user/notifications/disable`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body
+        });
+        return response.json();
+    }
+
+    public static async enableNotifications(): Promise<{ notifications_disabled: boolean; notifications_disabled_until: null }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/user/notifications/enable`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.json();
+    }
+
     // Global calendar preferences
     public static async getGlobalCalendarPreference(): Promise<any> {
         const baseUrl = await this.getBaseUrl();
