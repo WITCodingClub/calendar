@@ -14,7 +14,7 @@
     let currentEnvironment = $state<Environment>('prod');
     let authenticatedEnvironments = $state<Environment[]>([]);
     let notificationsDisabled = $state(false);
-    let connectedAccounts = $state<Array<{id: number, email: string, provider: string}>>([]);
+    let connectedAccounts = $state<Array<{id: string, email: string, provider: string, needs_reauth: boolean, token_revoked: boolean}>>([]);
     let addEmailInput = $state("");
     let showEnvSwitcher = $state<boolean>(false);
     let showClearDataButton = $state<boolean>(false);
@@ -276,7 +276,7 @@
         }
     }
 
-    async function disconnectAccount(credentialId: number) {
+    async function disconnectAccount(credentialId: string) {
         try {
             await API.disconnectAccount(credentialId);
             connectedAccounts = connectedAccounts.filter(a => a.id !== credentialId);
@@ -284,6 +284,36 @@
         } catch (e) {
             console.error('Failed to disconnect account:', e);
             snackbar('Failed to disconnect account', undefined, true);
+        }
+    }
+
+    async function reauthAccount(email: string) {
+        try {
+            const response = await API.requestOAuthForEmail(email);
+            if (response.error) {
+                snackbar(response.error, undefined, true);
+                return;
+            }
+
+            if (response.oauth_url) {
+                const popup = window.open(response.oauth_url, 'Google OAuth', 'width=500,height=600');
+
+                const pollTimer = setInterval(async () => {
+                    if (popup?.closed) {
+                        clearInterval(pollTimer);
+                        try {
+                            const accounts = await API.getConnectedAccounts();
+                            connectedAccounts = accounts.oauth_credentials || [];
+                            snackbar('Account re-authenticated successfully!', undefined, true);
+                        } catch (e) {
+                            console.error('Failed to refresh accounts:', e);
+                        }
+                    }
+                }, 500);
+            }
+        } catch (e) {
+            console.error('Failed to re-authenticate account:', e);
+            snackbar('Failed to re-authenticate account', undefined, true);
         }
     }
 
@@ -429,20 +459,34 @@
         {#if connectedAccounts.length > 0}
             <div class="flex flex-col gap-2">
                 {#each connectedAccounts as account}
-                    <div class="flex flex-row gap-3 items-center justify-between bg-surface-container-low rounded-lg p-3">
-                        <div class="flex flex-row gap-2 items-center">
-                            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-                            </svg>
-                            <span class="text-sm">{account.email}</span>
-                        </div>
-                        {#if connectedAccounts.length > 1}
-                            <Button variant="text" onclick={() => disconnectAccount(account.id)}>
-                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    <div class="flex flex-row gap-3 items-center justify-between bg-surface-container-low rounded-lg p-3 {account.needs_reauth ? 'border border-error' : ''}">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex flex-row gap-2 items-center">
+                                <svg class="w-5 h-5 {account.needs_reauth ? 'text-error' : 'text-primary'}" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
                                 </svg>
-                            </Button>
-                        {/if}
+                                <span class="text-sm">{account.email}</span>
+                            </div>
+                            {#if account.needs_reauth}
+                                <span class="text-xs text-error ml-7">
+                                    {account.token_revoked ? 'Access revoked - please re-authenticate' : 'Authentication expired - please re-authenticate'}
+                                </span>
+                            {/if}
+                        </div>
+                        <div class="flex flex-row gap-2 items-center">
+                            {#if account.needs_reauth}
+                                <Button variant="tonal" onclick={() => reauthAccount(account.email)}>
+                                    Re-auth
+                                </Button>
+                            {/if}
+                            {#if connectedAccounts.length > 1}
+                                <Button variant="text" onclick={() => disconnectAccount(account.id)}>
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                    </svg>
+                                </Button>
+                            {/if}
+                        </div>
                     </div>
                 {/each}
             </div>

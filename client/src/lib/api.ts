@@ -293,7 +293,7 @@ export class API {
     }
 
     // Connected Google accounts
-    public static async getConnectedAccounts(): Promise<{ oauth_credentials: Array<{id: number, email: string, provider: string}> }> {
+    public static async getConnectedAccounts(): Promise<{ oauth_credentials: Array<{id: string, email: string, provider: string, needs_reauth: boolean, token_revoked: boolean}> }> {
         const baseUrl = await this.getBaseUrl();
         const token = await this.getJwtToken();
         const response = await fetch(`${baseUrl}/user/oauth_credentials`, {
@@ -319,7 +319,7 @@ export class API {
         return response.json();
     }
 
-    public static async disconnectAccount(credentialId: number): Promise<void> {
+    public static async disconnectAccount(credentialId: string): Promise<void> {
         const baseUrl = await this.getBaseUrl();
         const token = await this.getJwtToken();
         await fetch(`${baseUrl}/user/oauth_credentials/${credentialId}`, {
