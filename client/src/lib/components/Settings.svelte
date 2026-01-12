@@ -9,6 +9,25 @@
     import { Button, SelectOutlined, snackbar, Switch } from "m3-svelte";
     import { onMount } from "svelte";
 
+    // Google Calendar color ID to hex mapping
+    const COLOR_ID_TO_HEX: Record<string, string> = {
+        "1": "#7986cb",  // Lavender
+        "2": "#33b679",  // Sage
+        "3": "#8e24aa",  // Grape
+        "4": "#e67c73",  // Flamingo
+        "5": "#f6bf26",  // Banana
+        "6": "#f4511e",  // Tangerine
+        "7": "#039be5",  // Peacock
+        "8": "#616161",  // Graphite
+        "9": "#3f51b5",  // Blueberry
+        "10": "#0b8043", // Basil
+        "11": "#d50000", // Tomato
+    };
+
+    const HEX_TO_COLOR_ID: Record<string, string> = Object.fromEntries(
+        Object.entries(COLOR_ID_TO_HEX).map(([id, hex]) => [hex, id])
+    );
+
     let userSettings = $state<UserSettings | undefined>(undefined);
     let email = $state<string | undefined>(undefined);
     let currentEnvironment = $state<Environment>('prod');
@@ -19,6 +38,7 @@
     let showEnvSwitcher = $state<boolean>(false);
     let showClearDataButton = $state<boolean>(false);
     let isRefreshingFlags = $state<boolean>(false);
+    let uniCalColor = $state<string>("#616161"); // Default to Graphite
 
     $effect(() => {
         userSettings = $storedUserSettings;
@@ -73,6 +93,19 @@
                 connectedAccounts = accounts.oauth_credentials || [];
             } catch (e) {
                 console.error('Failed to fetch connected accounts:', e);
+            }
+
+            // Fetch uni cal color preference
+            try {
+                const calPrefs = await API.getCalendarPreferences();
+                // Check if any uni_cal_category has a color set (they should all be the same)
+                const firstCategory = Object.values(calPrefs.uni_cal_categories || {})[0];
+                if (firstCategory?.color_id) {
+                    const colorId = String(firstCategory.color_id);
+                    uniCalColor = COLOR_ID_TO_HEX[colorId] || "#616161";
+                }
+            } catch (e) {
+                // Calendar preferences might not exist yet, that's okay
             }
         } catch (error) {
             console.error('Failed to load settings:', error);
@@ -140,6 +173,15 @@
 			storedUserSettings.set(userSettings);
 			API.userSettings(userSettings);
 		}
+    }
+
+    const uniCalColorGetterSetter = {
+        get value() { return uniCalColor; },
+        set value(value: string) {
+            uniCalColor = value;
+            const colorId = HEX_TO_COLOR_ID[value] || "8"; // Default to Graphite
+            API.setAllUniCalCategoriesColor(colorId);
+        }
     }
 
     function toggleUniversityCategory(categoryId: string) {
@@ -473,6 +515,29 @@
                 <label>
                     <Switch bind:checked={syncUniversityEventsGetterSetter.value} />
                 </label>
+            </div>
+        </div>
+
+        <div class="flex flex-row gap-3 items-center justify-between">
+            <h2 class="text-md font-bold">University Events Color</h2>
+            <div class="flex flex-row gap-2 items-center">
+                <div class="w-6 h-6 rounded-full border-2 border-outline" style="background-color: {uniCalColor};"></div>
+                <SelectOutlined label=""
+                    options={[
+                        { text: "Tomato", value: "#d50000" },
+                        { text: "Flamingo", value: "#e67c73" },
+                        { text: "Tangerine", value: "#f4511e" },
+                        { text: "Banana", value: "#f6bf26" },
+                        { text: "Sage", value: "#33b679" },
+                        { text: "Basil", value: "#0b8043" },
+                        { text: "Peacock", value: "#039be5" },
+                        { text: "Blueberry", value: "#3f51b5" },
+                        { text: "Lavender", value: "#7986cb" },
+                        { text: "Grape", value: "#8e24aa" },
+                        { text: "Graphite", value: "#616161" },
+                    ]}
+                    bind:value={uniCalColorGetterSetter.value}
+                />
             </div>
         </div>
 

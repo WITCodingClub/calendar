@@ -330,4 +330,52 @@ export class API {
         });
     }
 
+    // University calendar preferences
+    public static async getCalendarPreferences(): Promise<{
+        global: any;
+        event_types: Record<string, any>;
+        uni_cal_categories: Record<string, any>;
+    }> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/calendar_preferences`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    }
+
+    public static async setUniCalCategoryPreference(category: string, preferences: {
+        color_id?: string;
+        title_template?: string;
+        description_template?: string;
+    }): Promise<any> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/calendar_preferences/uni_cal:${category}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ calendar_preference: preferences })
+        });
+        return response.json();
+    }
+
+    // Set color for all university calendar categories at once
+    // colorId should be a Google Calendar color ID (1-11)
+    public static async setAllUniCalCategoriesColor(colorId: string): Promise<void> {
+        const categories = [
+            'holiday', 'term_dates', 'registration', 'deadline', 'finals',
+            'graduation', 'academic', 'campus_event', 'meeting', 'exhibit',
+            'announcement', 'other'
+        ];
+        await Promise.all(
+            categories.map(cat => this.setUniCalCategoryPreference(cat, { color_id: colorId }))
+        );
+    }
+
 }
