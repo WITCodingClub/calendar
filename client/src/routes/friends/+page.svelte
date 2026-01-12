@@ -2,7 +2,7 @@
     import { processedData as storedProcessedData, userSettings as storedUserSettings } from '$lib/store';
     import type { Course, MeetingTime, DayItem } from '$lib/types';
     import { fade, scale } from 'svelte/transition';
-    import { Chip, SelectOutlined } from 'm3-svelte';
+    import { Chip, SelectOutlined, TextFieldOutlined, VariableTabs } from 'm3-svelte';
     import friendSample2 from './user2.json';
     import friendSample3 from './user3.json';
     import friendSample4 from './user4.json';
@@ -148,6 +148,119 @@
         { key: 'saturday', label: 'Saturday', abbr: 'Sa', order: 5 },
         { key: 'sunday', label: 'Sunday', abbr: 'Su', order: 6 }
     ];
+
+    let meetMinDurationMinutesInput = $state<string>('30');
+    let meetBufferMinutesInput = $state<string>('10');
+    let meetMinDurationMinutes = $derived(Math.max(0, Math.floor(Number(meetMinDurationMinutesInput) || 0)));
+    let meetBufferMinutes = $derived(Math.max(0, Math.floor(Number(meetBufferMinutesInput) || 0)));
+    let meetBetweenClassesOnly = $state<boolean>(false);
+    let meetRangeStartInput = $state<string>('08:00');
+    let meetRangeEndInput = $state<string>('20:00');
+    let meetRangeStart = $derived(Math.max(8 * 60, Math.min(20 * 60, parseTimeToMinutes(meetRangeStartInput))));
+    let meetRangeEnd = $derived(Math.max(8 * 60, Math.min(20 * 60, parseTimeToMinutes(meetRangeEndInput))));
+    let meetRangeValid = $derived(meetRangeEnd > meetRangeStart);
+
+    type MeetWindow = { start: number; end: number; duration: number };
+    type MeetInterval = { start: number; end: number };
+
+    let tab = $state<'calendar' | 'meeting'>('calendar');
+
+    let bestMeetTimesByDay = $derived.by(() => {
+        const dayStart = meetRangeStart;
+        const dayEnd = meetRangeEnd;
+        if (!meetRangeValid) return {};
+
+        const selectedFriendCourses = friendList
+            .filter((f) => selectedFriends.includes(f.id))
+            .flatMap((f) => f.courses);
+
+        const weekdays = dayOrder.slice(0, 5).map((d) => d.key);
+        const byDay: Record<string, MeetWindow[]> = {};
+
+        if (selectedFriendCourses.length === 0) {
+            for (const key of weekdays) byDay[key] = [];
+            return byDay;
+        }
+
+        const meetingOccursOnDay = (meeting: MeetingTime, dayKey: DayItem['key']): boolean => {
+            return Boolean((meeting as unknown as Record<string, boolean>)[dayKey]);
+        };
+
+        const collectBusyIntervals = (dayKey: DayItem['key']): MeetInterval[] => {
+            const intervals: MeetInterval[] = [];
+            for (const course of selectedFriendCourses) {
+                for (const meeting of course.meeting_times) {
+                    if (!meetingOccursOnDay(meeting, dayKey)) continue;
+                    const rawStart = parseTimeToMinutes(meeting.begin_time);
+                    const rawEnd = parseTimeToMinutes(meeting.end_time);
+                    if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd)) continue;
+                    const start = Math.max(dayStart, rawStart - meetBufferMinutes);
+                    const end = Math.min(dayEnd, rawEnd + meetBufferMinutes);
+                    if (end <= start) continue;
+                    intervals.push({ start, end });
+                }
+            }
+            intervals.sort((a, b) => (a.start - b.start) || (a.end - b.end));
+            return intervals;
+        };
+
+        const mergeIntervals = (sorted: MeetInterval[]): MeetInterval[] => {
+            const merged: MeetInterval[] = [];
+            for (const it of sorted) {
+                const last = merged[merged.length - 1];
+                if (!last || it.start > last.end) {
+                    merged.push({ start: it.start, end: it.end });
+                    continue;
+                }
+                last.end = Math.max(last.end, it.end);
+            }
+            return merged;
+        };
+
+        const windowsFromMerged = (merged: MeetInterval[]): MeetWindow[] => {
+            const windows: MeetWindow[] = [];
+            if (meetBetweenClassesOnly) {
+                for (let i = 0; i < merged.length - 1; i++) {
+                    const start = merged[i].end;
+                    const end = merged[i + 1].start;
+                    const dur = end - start;
+                    if (dur >= meetMinDurationMinutes) windows.push({ start, end, duration: dur });
+                }
+                return windows;
+            }
+
+            let cursor = dayStart;
+            for (const b of merged) {
+                if (b.start > cursor) {
+                    const dur = b.start - cursor;
+                    if (dur >= meetMinDurationMinutes) {
+                        windows.push({ start: cursor, end: b.start, duration: dur });
+                    }
+                }
+                cursor = Math.max(cursor, b.end);
+            }
+            if (cursor < dayEnd) {
+                const dur = dayEnd - cursor;
+                if (dur >= meetMinDurationMinutes) {
+                    windows.push({ start: cursor, end: dayEnd, duration: dur });
+                }
+            }
+            return windows;
+        };
+
+        for (const key of weekdays) {
+            const merged = mergeIntervals(collectBusyIntervals(key as DayItem['key']));
+            if (merged.length === 0) {
+                byDay[key] = [];
+                continue;
+            }
+            const windows = windowsFromMerged(merged);
+            windows.sort((a, b) => (b.duration - a.duration) || (a.start - b.start));
+            byDay[key] = windows.slice(0, 3);
+        }
+
+        return byDay;
+    });
 
     type PositionedMeeting = {
         course: Course;
@@ -397,59 +510,119 @@
             />
         </div>
     </div>
-    {#if Object.values(stackedMeetings.byDay ?? {}).some((arr) => arr.length > 0)}
-        {@const latestHour = getLatestEndHourFromBlocks()}
-        {@const numHours = latestHour - 8 + 1}
-        <div class="flex flex-col w-full h-full overflow-hidden">
-            <div class="flex-1 overflow-x-auto overflow-y-hidden">
-                <div class="inline-flex flex-col min-w-full h-full">
-                    <div class="flex flex-row border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-10">
-                        <div class="w-24 border-r border-outline-variant"></div>
-                        {#each Array(numHours) as _, i}
-                            {@const hour = i + 8}
-                            <div class="w-32 border-r border-outline-variant flex items-center justify-center py-2">
-                                <span class="text-xs text-on-surface-variant">{formatHourLabel(hour)}</span>
+    <div class="w-full max-w-3xl">
+        <VariableTabs
+            secondary={true}
+            items={[
+                { name: 'Calendar', value: 'calendar' },
+                { name: 'Meeting Times', value: 'meeting' }
+            ]}
+            bind:tab
+        />
+    </div>
+
+    {#if tab === 'calendar'}
+        {#if Object.values(stackedMeetings.byDay ?? {}).some((arr) => arr.length > 0)}
+            {@const latestHour = getLatestEndHourFromBlocks()}
+            {@const numHours = latestHour - 8 + 1}
+            <div class="flex flex-col w-full h-full overflow-hidden">
+                <div class="flex-1 overflow-x-auto overflow-y-hidden">
+                    <div class="inline-flex flex-col min-w-full h-full">
+                        <div class="flex flex-row border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-10">
+                            <div class="w-24 border-r border-outline-variant"></div>
+                            {#each Array(numHours) as _, i}
+                                {@const hour = i + 8}
+                                <div class="w-32 border-r border-outline-variant flex items-center justify-center py-2">
+                                    <span class="text-xs text-on-surface-variant">{formatHourLabel(hour)}</span>
+                                </div>
+                            {/each}
+                        </div>
+
+                        {#each dayOrder.slice(0, 5) as day}
+                            {@const dayEvents = stackedMeetings.byDay?.[day.key] ?? []}
+                            {@const dayStacks = Math.max(stackedMeetings.maxStacksByDay?.[day.key] ?? 1, 1)}
+                            {@const dayHeight = Math.min(Math.max(120, dayStacks * 52), 190)}
+                            <div class="flex flex-row flex-1 border-b border-outline-variant relative" style={`height:${dayHeight}px; min-height:${dayHeight}px;`}>
+                                <div class="w-24 border-r border-outline-variant flex items-center justify-center bg-surface-container-low left-0 z-5">
+                                    <span class="font-medium text-sm">{day.label}</span>
+                                </div>
+
+                                <div class="relative flex-1 flex">
+                                    {#each Array(numHours) as _}
+                                        <div class="w-32 border-r border-outline-variant"></div>
+                                    {/each}
+
+                                    {#each dayEvents as item (`${item.ownerId}-${item.meeting.id}`)}
+                                        {@const overlapCount = Math.max(item.overlapCount ?? 1, 1)}
+                                        {@const heightPct = Math.max((100 - (overlapCount + 1) * stackGapPct) / overlapCount, 0)}
+                                        {@const topPct = stackGapPct + item.stackIndex * (heightPct + stackGapPct)}
+                                        <button
+                                            class="absolute rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
+                                            style={`background-color:${item.bgColor}; color:${item.textColor}; left:${item.startOffset}rem; width:${item.width}rem; top:${topPct}%; height:${heightPct}%; border-color:${item.bgColor}; opacity:${item.isPrimary ? 1 : 0.5};`}
+                                            onclick={() => {activeCourse = item.course; activeMeeting = item.meeting; activeDay = day;}}
+                                        >
+                                            <div class="font-medium truncate">{item.meeting.title_overrides?.[day.key] ?? item.course.title}</div>
+                                            <div class="opacity-80">{convertTo12Hour(item.meeting.begin_time)} - {convertTo12Hour(item.meeting.end_time)}</div>
+                                            <div class="opacity-70 text-[10px]">{item.meeting.location.building.abbreviation} {item.meeting.location.room}</div>
+                                        </button>
+                                    {/each}
+                                </div>
                             </div>
                         {/each}
                     </div>
-
-                    {#each dayOrder.slice(0, 5) as day}
-                        {@const dayEvents = stackedMeetings.byDay?.[day.key] ?? []}
-                        {@const dayStacks = Math.max(stackedMeetings.maxStacksByDay?.[day.key] ?? 1, 1)}
-                        {@const dayHeight = Math.min(Math.max(120, dayStacks * 52), 190)}
-                        <div class="flex flex-row flex-1 border-b border-outline-variant relative" style={`height:${dayHeight}px; min-height:${dayHeight}px;`}>
-                            <div class="w-24 border-r border-outline-variant flex items-center justify-center bg-surface-container-low left-0 z-5">
-                                <span class="font-medium text-sm">{day.label}</span>
-                            </div>
-
-                            <div class="relative flex-1 flex">
-                                {#each Array(numHours) as _}
-                                    <div class="w-32 border-r border-outline-variant"></div>
-                                {/each}
-
-                                {#each dayEvents as item (`${item.ownerId}-${item.meeting.id}`)}
-                                    {@const overlapCount = Math.max(item.overlapCount ?? 1, 1)}
-                                    {@const heightPct = Math.max((100 - (overlapCount + 1) * stackGapPct) / overlapCount, 0)}
-                                    {@const topPct = stackGapPct + item.stackIndex * (heightPct + stackGapPct)}
-                                    <button
-                                        class="absolute rounded px-2 py-1 text-xs overflow-hidden cursor-pointer hover:shadow-md transition-shadow border-t-2"
-                                        style={`background-color:${item.bgColor}; color:${item.textColor}; left:${item.startOffset}rem; width:${item.width}rem; top:${topPct}%; height:${heightPct}%; border-color:${item.bgColor}; opacity:${item.isPrimary ? 1 : 0.5};`}
-                                        onclick={() => {activeCourse = item.course; activeMeeting = item.meeting; activeDay = day;}}
-                                    >
-                                        <div class="font-medium truncate">{item.meeting.title_overrides?.[day.key] ?? item.course.title}</div>
-                                        <div class="opacity-80">{convertTo12Hour(item.meeting.begin_time)} - {convertTo12Hour(item.meeting.end_time)}</div>
-                                        <div class="opacity-70 text-[10px]">{item.meeting.location.building.abbreviation} {item.meeting.location.room}</div>
-                                    </button>
-                                {/each}
-                            </div>
-                        </div>
-                    {/each}
+                </div>
+            </div>
+        {:else}
+            <div class="text-sm text-secondary">No calendar data available.</div>
+        {/if}
+    {:else}
+        <div class="flex flex-col gap-3 w-full max-w-3xl mt-2">
+            <div class="flex flex-row gap-3 items-center justify-between flex-wrap">
+                <div class="flex flex-col">
+                    <div class="text-sm text-on-surface-variant">Best times to meet</div>
+                    <div class="text-xs text-on-surface-variant">Common free time for selected friends, between 8am–8pm.</div>
+                </div>
+                <div class="flex flex-row gap-2 items-center flex-wrap">
+                    <TextFieldOutlined type="number" label="Min (min)" bind:value={meetMinDurationMinutesInput} />
+                    <TextFieldOutlined type="number" label="Buffer (min)" bind:value={meetBufferMinutesInput} />
+                    <TextFieldOutlined type="time" label="Start" bind:value={meetRangeStartInput} />
+                    <TextFieldOutlined type="time" label="End" bind:value={meetRangeEndInput} />
+                    <Chip variant="input" selected={meetBetweenClassesOnly} onclick={() => { meetBetweenClassesOnly = !meetBetweenClassesOnly; }}>
+                        Between classes
+                    </Chip>
                 </div>
             </div>
         </div>
-    {:else}
-        <div class="text-sm text-secondary">No calendar data available.</div>
+
+        <div class="flex flex-col gap-3 w-full max-w-3xl mt-2">
+            {#if selectedFriends.length === 0}
+                <div class="text-sm text-secondary">Select at least one friend to see suggestions.</div>
+            {:else if !meetRangeValid}
+                <div class="text-sm text-secondary">Invalid time range.</div>
+            {:else if Object.values(bestMeetTimesByDay ?? {}).some((arr) => arr.length > 0)}
+                <div class="flex flex-col gap-2">
+                    {#each dayOrder.slice(0, 5) as day}
+                        {@const windows = bestMeetTimesByDay?.[day.key] ?? []}
+                        {#if windows.length > 0}
+                            <div class="flex flex-row gap-3 items-start justify-between bg-surface-container-low rounded-lg p-3 border border-outline-variant">
+                                <div class="font-medium text-sm w-24">{day.label}</div>
+                                <div class="flex-1 flex flex-row gap-2 flex-wrap justify-end">
+                                    {#each windows as w (`${day.key}-${w.start}-${w.end}`)}
+                                        <Chip variant="input" selected={false} onclick={() => {}}>
+                                            {convertTo12Hour(minutesToHHMM(w.start))} – {convertTo12Hour(minutesToHHMM(w.end))} ({w.duration}m)
+                                        </Chip>
+                                    {/each}
+                                </div>
+                            </div>
+                        {/if}
+                    {/each}
+                </div>
+            {:else}
+                <div class="text-sm text-secondary">No meeting windows match your filters.</div>
+            {/if}
+        </div>
     {/if}
+
 </div>
 
 {#if activeCourse}
