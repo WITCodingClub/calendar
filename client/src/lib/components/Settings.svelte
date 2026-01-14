@@ -57,14 +57,12 @@
             showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
             showClearDataButton = featureFlags.isEnabledSync('debugMode');
 
-            // Fetch global calendar preferences for notification toggle
+            // Fetch notification DND status
             try {
-                const globalPref = await API.getGlobalCalendarPreference();
-                if (globalPref && Array.isArray(globalPref.reminder_settings) && globalPref.reminder_settings.length === 0) {
-                    notificationsDisabled = true;
-                }
+                const status = await API.getNotificationStatus();
+                notificationsDisabled = status.notifications_disabled;
             } catch (e) {
-                // Global preference might not exist yet, that's okay
+                // DND status might not be available, that's okay
             }
 
             // Fetch connected accounts
@@ -211,18 +209,16 @@
         notificationsDisabled = disabled;
         try {
             if (disabled) {
-                await API.setGlobalCalendarPreference({ reminder_settings: [] });
+                await API.disableNotifications();
                 snackbar('All notifications disabled', undefined, true);
             } else {
-                await API.setGlobalCalendarPreference({
-                    reminder_settings: [{ time: "30", type: "minutes", method: "notification" }]
-                });
-                snackbar('Default notifications restored (30 min before)', undefined, true);
+                await API.enableNotifications();
+                snackbar('Notifications re-enabled', undefined, true);
             }
         } catch (e) {
             console.error('Failed to update notification settings:', e);
             snackbar('Failed to update notification settings', undefined, true);
-            notificationsDisabled = !disabled; 
+            notificationsDisabled = !disabled;
         }
     }
 
