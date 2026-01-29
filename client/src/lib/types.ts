@@ -199,6 +199,7 @@ interface Preview {
 }
 
 interface GetPreferencesResponse {
+	notifications_disabled: boolean;
     individual_preference: EventPreferences;
     preview: Preview;
     templates: TemplateVariables;
