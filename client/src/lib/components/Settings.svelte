@@ -175,12 +175,16 @@
 		}
     }
 
-    const uniCalColorGetterSetter = {
-        get value() { return uniCalColor; },
-        set value(value: string) {
-            uniCalColor = value;
-            const colorId = HEX_TO_COLOR_ID[value] || "8"; // Default to Graphite
-            API.setAllUniCalCategoriesColor(colorId);
+    async function handleUniCalColorChange(newColor: string) {
+        uniCalColor = newColor;
+        const colorId = HEX_TO_COLOR_ID[newColor] || "8"; // Default to Graphite
+
+        try {
+            await API.setAllUniCalCategoriesColor(colorId);
+            snackbar('University events color updated', undefined, true);
+        } catch (error) {
+            console.error('Failed to update university events color:', error);
+            snackbar('Failed to update color. Please try again.', undefined, true);
         }
     }
 
@@ -536,7 +540,8 @@
                         { text: "Grape", value: "#8e24aa" },
                         { text: "Graphite", value: "#616161" },
                     ]}
-                    bind:value={uniCalColorGetterSetter.value}
+                    bind:value={uniCalColor}
+                    onchange={() => handleUniCalColorChange(uniCalColor)}
                 />
             </div>
         </div>
