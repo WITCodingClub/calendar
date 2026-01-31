@@ -38,7 +38,11 @@
     let showEnvSwitcher = $state<boolean>(false);
     let showClearDataButton = $state<boolean>(false);
     let isRefreshingFlags = $state<boolean>(false);
-    let uniCalColor = $state<string>("#616161"); // Default to Graphite
+    const UNI_CAL_COLOR_STORAGE_KEY = "uniCalColor";
+    let uniCalColor = $state<string>(
+        browser ? (localStorage.getItem(UNI_CAL_COLOR_STORAGE_KEY) ?? "") : "#616161"
+    );
+    let hasLoadedUniCalColor = $state(false);
 
     $effect(() => {
         userSettings = $storedUserSettings;
@@ -102,10 +106,18 @@
                 const firstCategory = Object.values(calPrefs.uni_cal_categories || {})[0];
                 if (firstCategory?.color_id) {
                     const colorId = String(firstCategory.color_id);
-                    uniCalColor = COLOR_ID_TO_HEX[colorId] || "#616161";
+                    const resolvedColor = COLOR_ID_TO_HEX[colorId];
+                    if (resolvedColor) {
+                        uniCalColor = resolvedColor;
+                        if (browser) {
+                            localStorage.setItem(UNI_CAL_COLOR_STORAGE_KEY, resolvedColor);
+                        }
+                    }
                 }
             } catch (e) {
                 // Calendar preferences might not exist yet, that's okay
+            } finally {
+                hasLoadedUniCalColor = true;
             }
         } catch (error) {
             console.error('Failed to load settings:', error);
@@ -176,11 +188,16 @@
     }
 
     async function handleUniCalColorChange(newColor: string) {
+        if (!hasLoadedUniCalColor) return;
+        if (!newColor) return;
         uniCalColor = newColor;
         const colorId = HEX_TO_COLOR_ID[newColor] || "8"; // Default to Graphite
 
         try {
             await API.setAllUniCalCategoriesColor(colorId);
+            if (browser) {
+                localStorage.setItem(UNI_CAL_COLOR_STORAGE_KEY, newColor);
+            }
             snackbar('University events color updated', undefined, true);
         } catch (error) {
             console.error('Failed to update university events color:', error);
