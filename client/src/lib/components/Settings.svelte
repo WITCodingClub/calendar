@@ -539,31 +539,31 @@
             </div>
         </div>
 
-        <div class="flex flex-row gap-3 items-center justify-between">
-            <h2 class="text-md font-bold">University Events Color</h2>
-            <div class="flex flex-row gap-2 items-center">
-                <div class="w-6 h-6 rounded-full border-2 border-outline" style="background-color: {uniCalColor};"></div>
-                <SelectOutlined label=""
-                    options={[
-                        { text: "Tomato", value: "#d50000" },
-                        { text: "Flamingo", value: "#e67c73" },
-                        { text: "Tangerine", value: "#f4511e" },
-                        { text: "Banana", value: "#f6bf26" },
-                        { text: "Sage", value: "#33b679" },
-                        { text: "Basil", value: "#0b8043" },
-                        { text: "Peacock", value: "#039be5" },
-                        { text: "Blueberry", value: "#3f51b5" },
-                        { text: "Lavender", value: "#7986cb" },
-                        { text: "Grape", value: "#8e24aa" },
-                        { text: "Graphite", value: "#616161" },
-                    ]}
-                    bind:value={uniCalColor}
-                    onchange={() => handleUniCalColorChange(uniCalColor)}
-                />
-            </div>
-        </div>
-
         {#if syncUniversityEventsValue && availableCategories.length > 0}
+            <div class="flex flex-row gap-3 items-center justify-between">
+                <h2 class="text-md font-bold">University Events Color</h2>
+                <div class="flex flex-row gap-2 items-center">
+                    <div class="w-6 h-6 rounded-full border-2 border-outline" style="background-color: {uniCalColor};"></div>
+                    <SelectOutlined label=""
+                        options={[
+                            { text: "Tomato", value: "#d50000" },
+                            { text: "Flamingo", value: "#e67c73" },
+                            { text: "Tangerine", value: "#f4511e" },
+                            { text: "Banana", value: "#f6bf26" },
+                            { text: "Sage", value: "#33b679" },
+                            { text: "Basil", value: "#0b8043" },
+                            { text: "Peacock", value: "#039be5" },
+                            { text: "Blueberry", value: "#3f51b5" },
+                            { text: "Lavender", value: "#7986cb" },
+                            { text: "Grape", value: "#8e24aa" },
+                            { text: "Graphite", value: "#616161" },
+                        ]}
+                        bind:value={uniCalColor}
+                        onchange={() => handleUniCalColorChange(uniCalColor)}
+                    />
+                </div>
+            </div>
+
             <div class="flex flex-col gap-2 ml-2 pl-4 border-l-2 border-outline-variant">
                 <p class="text-sm text-outline font-medium">Select event types to sync:</p>
                 {#each availableCategories.filter(c => c.id !== 'holiday') as category}
