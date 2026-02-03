@@ -1,5 +1,5 @@
 import { EnvironmentManager } from "./environment";
-import type { isProcessed, ProcessedEvents, UniversityCalendarEvent, UniversityEventCategoryWithCount, UserSettings } from "./types";
+import type { FeatureFlagsResponse, isProcessed, ProcessedEvents, UniversityCalendarEvent, UniversityEventCategoryWithCount, UserSettings } from "./types";
 
 export class API {
     private static async getBaseUrl(): Promise<string> {
@@ -32,6 +32,24 @@ export class API {
 
         const data = await response.json();
         return data.is_enabled;
+    }
+
+    public static async getAllFeatureFlags(): Promise<FeatureFlagsResponse> {
+        const baseUrl = await this.getBaseUrl();
+        const token = await this.getJwtToken();
+        const response = await fetch(`${baseUrl}/user/feature_flags`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            console.error('Feature flags API error:', response.status, response.statusText);
+            throw new Error(`Failed to fetch feature flags: ${response.status}`);
+        }
+
+        return response.json();
     }
 
     public static async getTerms() {
