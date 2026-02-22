@@ -1146,7 +1146,7 @@
                             {/each}
                         </div>
                         <h2 class="text-md">Event Description</h2>
-                        <div class="flex flex-row gap-2 items-center peak">
+                        <div class="flex flex-row flex-wrap gap-2 items-center peak desc-chips">
 							{#each derivedTemplates.descriptionTemplates as template, i}
 								{@const selected = (editDescription && descriptionTemplates.includes(editDescription)) ? (editDescription === descriptionTemplates[i]) : (resolved?.description_template === descriptionTemplates[i])}
 								<Chip selected={selected} variant="input" onclick={() => {editDescription = descriptionTemplates[i];}}>{template.join('')}</Chip>
@@ -1242,6 +1242,18 @@
 
     :global(.peak button) {
         height: 2.5rem !important;
+    }
+
+    :global(.desc-chips button.m3-container) {
+        flex-shrink: 0;
+        width: fit-content;
+        height: auto !important;
+        min-height: 2.5rem;
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+        align-items: flex-start !important;
+        white-space: pre-line;
+        overflow: visible;
     }
 
     :global(.unpeak button) {
