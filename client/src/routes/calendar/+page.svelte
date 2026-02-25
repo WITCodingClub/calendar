@@ -977,6 +977,7 @@
                 </p>
                 <div class="flex flex-row gap-2 items-center">
                     <Button variant="outlined" square onclick={copyIcsToClipboard}>Copy Calendar Link</Button>
+                    <Button variant="outlined" square onclick={() => goto('/friends')}>View Friends</Button>
                 </div>
             </div>
         </div>
