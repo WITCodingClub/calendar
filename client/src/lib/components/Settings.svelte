@@ -36,7 +36,6 @@
     let connectedAccounts = $state<Array<{id: string, email: string, provider: string, needs_reauth: boolean, token_revoked: boolean}>>([]);
     let addEmailInput = $state("");
     let showEnvSwitcher = $state<boolean>(false);
-    let showClearDataButton = $state<boolean>(false);
     let isRefreshingFlags = $state<boolean>(false);
     const UNI_CAL_COLOR_STORAGE_KEY = "uniCalColor";
     let uniCalColor = $state<string>(
@@ -79,7 +78,6 @@
             storedUserSettings.set(userSettings);
             email = emailData.email;
             showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
-            showClearDataButton = featureFlags.isEnabledSync('debugMode');
 
             // Fetch notification DND status
             try {
@@ -392,7 +390,6 @@
             featureFlags.clearCache();
             await featureFlags.reload();
             showEnvSwitcher = featureFlags.isEnabledSync('envSwitcher');
-            showClearDataButton = featureFlags.isEnabledSync('debugMode');
             snackbar('Feature flags refreshed!', undefined, true);
         } finally {
             isRefreshingFlags = false;
@@ -629,7 +626,6 @@
             {isRefreshingFlags ? 'Refreshing...' : 'Refresh Flags'}
         </Button>
     </div>
-    {#if showClearDataButton}
     <div class="flex flex-col gap-2 items-center justify-center mt-6 w-full">
         <Button variant="filled" onclick={clearLocalStorage}>Clear Local Data</Button>
         <p class="text-sm text-error text-center max-w-md">
@@ -637,5 +633,4 @@
             This will clear all your local data and you will need to sign in again. This does <b>not</b> affect your Calendar data.
         </p>
     </div>
-    {/if}
 </div>
