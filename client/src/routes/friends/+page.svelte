@@ -1,11 +1,10 @@
 <script lang="ts">
+    import { API } from '$lib/api';
     import { processedData as storedProcessedData, userSettings as storedUserSettings } from '$lib/store';
-    import type { Course, MeetingTime, DayItem } from '$lib/types';
+    import type { Course, DayItem, FriendIdentity, FriendProcessedEventsResponse, FriendRequestIncoming, FriendRequestOutgoing, MeetingTime } from '$lib/types';
+    import { onMount } from 'svelte';
     import { fade, scale } from 'svelte/transition';
     import { Chip, SelectOutlined, TextFieldOutlined, VariableTabs } from 'm3-svelte';
-    import friendSample2 from './user2.json';
-    import friendSample3 from './user3.json';
-    import friendSample4 from './user4.json';
 
     let selected = $state<string | undefined>(undefined);
     let processedData: Course[] | undefined = $derived(
@@ -19,14 +18,52 @@
     let activeCourse = $state<Course | undefined>(undefined);
     let activeMeeting = $state<MeetingTime | undefined>(undefined);
     let activeDay = $state<DayItem | undefined>(undefined);
+    let friendIdentities = $state<FriendIdentity[]>([]);
+    let friendList = $state<Array<{ id: string; name: string; courses: Course[] }>>([]);
+    let incomingRequests = $state<FriendRequestIncoming[]>([]);
+    let outgoingRequests = $state<FriendRequestOutgoing[]>([]);
+    let selectedFriends = $state<string[]>([]);
+    let sendFriendIdInput = $state<string>('');
+    let friendsLoading = $state<boolean>(false);
+    let requestsLoading = $state<boolean>(false);
+    let schedulesLoading = $state<boolean>(false);
+    let pageError = $state<string>('');
+    let actionLoadingId = $state<string>('');
+    let schedulesLoadVersion = 0;
 
-    type FriendData = { id: string; name: string; data: typeof friendSample2 };
+    type RawFriendMeeting = {
+        begin_time: string;
+        end_time: string;
+        day_of_week: string;
+        start_date?: string;
+        end_date?: string;
+        location?: {
+            building?: {
+                name?: string;
+                abbreviation?: string;
+            };
+            room?: string;
+        };
+    };
 
-    const friendSamples: FriendData[] = [
-        { id: 'friend-2', name: 'Daniel', data: friendSample2 },
-        { id: 'friend-3', name: 'Jasper', data: friendSample3 },
-        { id: 'friend-4', name: 'Jojo', data: friendSample4 }
-    ];
+    type RawFriendCourse = {
+        title: string;
+        subject?: string;
+        prefix?: string;
+        course_number?: number | string;
+        schedule_type?: string;
+        term?: {
+            uid?: number | string;
+            season?: string;
+            year?: number | string;
+        };
+        instructors?: Array<{
+            first_name?: string;
+            last_name?: string;
+            email?: string;
+        }>;
+        meeting_times?: RawFriendMeeting[];
+    };
 
     function parseTimeToMinutes(timeStr: string): number {
         const trimmed = timeStr.trim();
@@ -56,34 +93,35 @@
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     }
 
-    function mapFriendCourses(data: typeof friendSample2, friendId: string): Course[] {
-        return data.processed_courses.map((c, ci) => ({
+    function mapFriendCourses(data: FriendProcessedEventsResponse, friendId: string): Course[] {
+        const processedCourses = Array.isArray(data?.processed_courses) ? (data.processed_courses as RawFriendCourse[]) : [];
+        return processedCourses.map((c, ci: number) => ({
             title: c.title,
-            prefix: c.subject,
-            course_number: c.course_number,
-            schedule_type: c.schedule_type,
-            term: { uid: c.term.uid, season: c.term.season, year: c.term.year },
+            prefix: c.subject ?? c.prefix ?? '',
+            course_number: Number(c.course_number ?? 0),
+            schedule_type: c.schedule_type ?? '',
+            term: { uid: Number(c.term?.uid ?? 0), season: c.term?.season ?? '', year: Number(c.term?.year ?? 0) },
             professor: {
-                first_name: c.instructors[0]?.first_name ?? '',
-                last_name: c.instructors[0]?.last_name ?? '',
-                email: c.instructors[0]?.email ?? ''
+                first_name: c.instructors?.[0]?.first_name ?? '',
+                last_name: c.instructors?.[0]?.last_name ?? '',
+                email: c.instructors?.[0]?.email ?? ''
             },
-            meeting_times: c.meeting_times.map((m, mi) => {
+            meeting_times: (Array.isArray(c.meeting_times) ? c.meeting_times : []).map((m, mi: number) => {
                 const begin = to24Hour(m.begin_time);
                 const end = to24Hour(m.end_time);
-                const dayKey = m.day_of_week as DayItem['key'];
+                const dayKey = String(m.day_of_week ?? '').toLowerCase() as DayItem['key'];
                 return {
                     id: `${friendId}-${ci}-${mi}-${dayKey}`,
                     begin_time: begin,
                     end_time: end,
-                    start_date: m.start_date,
-                    end_date: m.end_date,
+                    start_date: m.start_date ?? '',
+                    end_date: m.end_date ?? '',
                     location: {
                         building: {
-                            name: m.location.building.name,
-                            abbreviation: m.location.building.abbreviation
+                            name: m.location?.building?.name ?? '',
+                            abbreviation: m.location?.building?.abbreviation ?? ''
                         },
-                        room: m.location.room
+                        room: m.location?.room ?? ''
                     },
                     monday: dayKey === 'monday',
                     tuesday: dayKey === 'tuesday',
@@ -96,14 +134,6 @@
             })
         }));
     }
-
-    const friendList: Array<{ id: string; name: string; courses: Course[] }> = friendSamples.map((f) => ({
-        id: f.id,
-        name: f.name,
-        courses: mapFriendCourses(f.data, f.id)
-    }));
-
-    let selectedFriends = $state<string[]>(friendList.length ? [friendList[0].id] : []);
 
     type CalendarBlock = {
         course: Course;
@@ -318,7 +348,7 @@
                     const startTotal = parseTimeToMinutes(meeting.begin_time);
                     const endTotal = parseTimeToMinutes(meeting.end_time);
                     for (const { key } of dayOrder) {
-                        if (!(meeting as any)[key]) continue;
+                        if (!(meeting as unknown as Record<DayItem['key'], boolean>)[key]) continue;
                         blocks.push({ course, meeting, startTotal, endTotal, ownerId, ownerPriority, isPrimary });
                     }
                 }
@@ -332,12 +362,12 @@
         const maxStacksByDay: Record<string, number> = {};
 
         for (const { key } of dayOrder) {
-            const seen = new Set<string>();
+            const seen: Record<string, boolean> = {};
             const blocks = allBlocks.filter((b) => {
-                if (!(b.meeting as any)[key]) return false;
+                if (!(b.meeting as unknown as Record<DayItem['key'], boolean>)[key]) return false;
                 const k = `${b.ownerId}-${b.startTotal}-${b.endTotal}-${b.course.title}`;
-                if (seen.has(k)) return false;
-                seen.add(k);
+                if (seen[k]) return false;
+                seen[k] = true;
                 return true;
             });
             if (blocks.length === 0) {
@@ -466,35 +496,277 @@
         return latest;
     }
 
+    async function loadFriendsAndRequests() {
+        pageError = '';
+        friendsLoading = true;
+        requestsLoading = true;
+        try {
+            const [friendsResponse, requestsResponse] = await Promise.all([
+                API.getFriends(),
+                API.getFriendRequests()
+            ]);
+            friendIdentities = friendsResponse.friends ?? [];
+            incomingRequests = requestsResponse.incoming ?? [];
+            outgoingRequests = requestsResponse.outgoing ?? [];
+        } catch (error) {
+            console.error('Failed to load friends data', error);
+            pageError = 'Failed to load friends data.';
+        } finally {
+            friendsLoading = false;
+            requestsLoading = false;
+        }
+    }
+
+    async function loadFriendSchedules(termUid: string) {
+        const loadVersion = ++schedulesLoadVersion;
+        schedulesLoading = true;
+        try {
+            const coursesByFriend = await Promise.all(friendIdentities.map(async (friend) => {
+                try {
+                    const status = await API.friendIsProcessed(friend.id, termUid);
+                    if (!status.processed) {
+                        return { id: friend.id, courses: [] as Course[] };
+                    }
+                    const response = await API.getFriendProcessedEvents(friend.id, termUid);
+                    return { id: friend.id, courses: mapFriendCourses(response, friend.id) };
+                } catch (error) {
+                    console.error(`Failed to load schedule for ${friend.id}`, error);
+                    return { id: friend.id, courses: [] as Course[] };
+                }
+            }));
+            if (loadVersion !== schedulesLoadVersion) return;
+            const coursesMap = new Map(coursesByFriend.map((f) => [f.id, f.courses]));
+            friendList = friendIdentities.map((friend) => ({
+                id: friend.id,
+                name: friend.name,
+                courses: coursesMap.get(friend.id) ?? []
+            }));
+            selectedFriends = selectedFriends.filter((id) => friendIdentities.some((f) => f.id === id));
+            if (selectedFriends.length === 0 && friendIdentities.length > 0) {
+                selectedFriends = [friendIdentities[0].id];
+            }
+            if (primaryUser !== 'you' && !friendIdentities.some((f) => f.id === primaryUser)) {
+                primaryUser = 'you';
+            }
+        } finally {
+            if (loadVersion === schedulesLoadVersion) {
+                schedulesLoading = false;
+            }
+        }
+    }
+
+    async function sendFriendRequest() {
+        const friendId = sendFriendIdInput.trim();
+        if (!friendId) return;
+        actionLoadingId = 'send-request';
+        pageError = '';
+        try {
+            await API.createFriendRequest(friendId);
+            sendFriendIdInput = '';
+            await loadFriendsAndRequests();
+        } catch (error) {
+            console.error('Failed to send friend request', error);
+            pageError = 'Failed to send friend request.';
+        } finally {
+            actionLoadingId = '';
+        }
+    }
+
+    async function acceptRequest(requestId: string) {
+        actionLoadingId = `accept-${requestId}`;
+        pageError = '';
+        try {
+            await API.acceptFriendRequest(requestId);
+            await loadFriendsAndRequests();
+            if (selected) {
+                await loadFriendSchedules(selected);
+            }
+        } catch (error) {
+            console.error('Failed to accept request', error);
+            pageError = 'Failed to accept request.';
+        } finally {
+            actionLoadingId = '';
+        }
+    }
+
+    async function declineRequest(requestId: string) {
+        actionLoadingId = `decline-${requestId}`;
+        pageError = '';
+        try {
+            await API.declineFriendRequest(requestId);
+            await loadFriendsAndRequests();
+        } catch (error) {
+            console.error('Failed to decline request', error);
+            pageError = 'Failed to decline request.';
+        } finally {
+            actionLoadingId = '';
+        }
+    }
+
+    async function cancelRequest(requestId: string) {
+        actionLoadingId = `cancel-${requestId}`;
+        pageError = '';
+        try {
+            await API.cancelFriendRequest(requestId);
+            await loadFriendsAndRequests();
+        } catch (error) {
+            console.error('Failed to cancel request', error);
+            pageError = 'Failed to cancel request.';
+        } finally {
+            actionLoadingId = '';
+        }
+    }
+
+    async function unfriend(friendId: string) {
+        actionLoadingId = `unfriend-${friendId}`;
+        pageError = '';
+        try {
+            await API.removeFriend(friendId);
+            await loadFriendsAndRequests();
+            if (selected) {
+                await loadFriendSchedules(selected);
+            }
+        } catch (error) {
+            console.error('Failed to remove friend', error);
+            pageError = 'Failed to remove friend.';
+        } finally {
+            actionLoadingId = '';
+        }
+    }
+
+    onMount(async () => {
+        await loadFriendsAndRequests();
+    });
+
     $effect(() => {
         if (!selected && $storedProcessedData.length > 0) {
             selected = String($storedProcessedData[0].termId);
         }
     });
+
+    $effect(() => {
+        if (!selected) return;
+        if (friendIdentities.length === 0) {
+            friendList = [];
+            selectedFriends = [];
+            return;
+        }
+        void loadFriendSchedules(selected);
+    });
 </script>
 
 <div class="flex flex-col gap-4 justify-center items-center h-full mt-4 w-full px-3">
     <div class="flex flex-col gap-3 w-full max-w-3xl">
-        <div class="flex flex-row gap-3 items-center flex-wrap">
-            <div class="text-sm text-on-surface-variant">Friends:</div>
-            {#each friendList as friend}
-                <Chip
-                    variant="input"
-                    selected={selectedFriends.includes(friend.id)}
-                    onclick={() => {
-                        const exists = selectedFriends.includes(friend.id);
-                        const next = exists
-                            ? selectedFriends.filter((id) => id !== friend.id)
-                            : [...selectedFriends, friend.id];
-                        selectedFriends = next;
-                        if (primaryUser !== 'you' && !next.includes(primaryUser)) {
-                            primaryUser = 'you';
+        {#if pageError}
+            <div class="text-sm text-error">{pageError}</div>
+        {/if}
+        <div class="flex flex-col gap-2">
+            <div class="text-sm text-on-surface-variant">Send friend request</div>
+            <div class="flex flex-row gap-2 items-center flex-wrap">
+                <TextFieldOutlined
+                    label="Friend ID"
+                    bind:value={sendFriendIdInput}
+                    onkeydown={(e) => {
+                        if (e.key === 'Enter') {
+                            sendFriendRequest();
                         }
                     }}
+                />
+                <button
+                    class="px-3 py-2 rounded bg-primary text-on-primary text-sm disabled:opacity-50"
+                    disabled={actionLoadingId === 'send-request' || !sendFriendIdInput.trim()}
+                    onclick={sendFriendRequest}
                 >
-                    {friend.name}
-                </Chip>
-            {/each}
+                    Send
+                </button>
+            </div>
+        </div>
+        <div class="flex flex-col gap-2">
+            <div class="text-sm text-on-surface-variant">Incoming requests</div>
+            {#if requestsLoading}
+                <div class="text-xs text-on-surface-variant">Loading requests...</div>
+            {:else if incomingRequests.length === 0}
+                <div class="text-xs text-on-surface-variant">No incoming requests.</div>
+            {:else}
+                {#each incomingRequests as req (req.request_id)}
+                    <div class="flex flex-row items-center justify-between bg-surface-container-low rounded px-3 py-2 border border-outline-variant">
+                        <div class="text-sm">{req.from.name} ({req.from.id})</div>
+                        <div class="flex flex-row gap-2">
+                            <button
+                                class="px-2 py-1 rounded bg-primary text-on-primary text-xs disabled:opacity-50"
+                                disabled={actionLoadingId !== '' && actionLoadingId !== `accept-${req.request_id}`}
+                                onclick={() => acceptRequest(req.request_id)}
+                            >
+                                Accept
+                            </button>
+                            <button
+                                class="px-2 py-1 rounded bg-error text-on-error text-xs disabled:opacity-50"
+                                disabled={actionLoadingId !== '' && actionLoadingId !== `decline-${req.request_id}`}
+                                onclick={() => declineRequest(req.request_id)}
+                            >
+                                Decline
+                            </button>
+                        </div>
+                    </div>
+                {/each}
+            {/if}
+        </div>
+        <div class="flex flex-col gap-2">
+            <div class="text-sm text-on-surface-variant">Outgoing requests</div>
+            {#if requestsLoading}
+                <div class="text-xs text-on-surface-variant">Loading requests...</div>
+            {:else if outgoingRequests.length === 0}
+                <div class="text-xs text-on-surface-variant">No outgoing requests.</div>
+            {:else}
+                {#each outgoingRequests as req (req.request_id)}
+                    <div class="flex flex-row items-center justify-between bg-surface-container-low rounded px-3 py-2 border border-outline-variant">
+                        <div class="text-sm">{req.to.name} ({req.to.id})</div>
+                        <button
+                            class="px-2 py-1 rounded bg-error text-on-error text-xs disabled:opacity-50"
+                            disabled={actionLoadingId !== '' && actionLoadingId !== `cancel-${req.request_id}`}
+                            onclick={() => cancelRequest(req.request_id)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                {/each}
+            {/if}
+        </div>
+        <div class="flex flex-row gap-3 items-center flex-wrap">
+            <div class="text-sm text-on-surface-variant">Friends:</div>
+            {#if friendsLoading || schedulesLoading}
+                <div class="text-xs text-on-surface-variant">Loading friends...</div>
+            {:else if friendList.length === 0}
+                <div class="text-xs text-on-surface-variant">No accepted friends yet.</div>
+            {:else}
+                {#each friendList as friend (friend.id)}
+                    <div class="flex flex-row gap-2 items-center">
+                        <Chip
+                            variant="input"
+                            selected={selectedFriends.includes(friend.id)}
+                            onclick={() => {
+                                const exists = selectedFriends.includes(friend.id);
+                                const next = exists
+                                    ? selectedFriends.filter((id) => id !== friend.id)
+                                    : [...selectedFriends, friend.id];
+                                selectedFriends = next;
+                                if (primaryUser !== 'you' && !next.includes(primaryUser)) {
+                                    primaryUser = 'you';
+                                }
+                            }}
+                        >
+                            {friend.name}
+                        </Chip>
+                        <button
+                            class="px-2 py-1 rounded bg-error text-on-error text-xs disabled:opacity-50"
+                            disabled={actionLoadingId !== '' && actionLoadingId !== `unfriend-${friend.id}`}
+                            onclick={() => unfriend(friend.id)}
+                        >
+                            Remove
+                        </button>
+                    </div>
+                {/each}
+            {/if}
         </div>
         <div class="flex flex-row gap-3 items-center">
             <div class="text-sm text-on-surface-variant">Primary:</div>
@@ -530,7 +802,7 @@
                     <div class="inline-flex flex-col min-w-full h-full">
                         <div class="flex flex-row border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-10">
                             <div class="w-24 border-r border-outline-variant"></div>
-                            {#each Array(numHours) as _, i}
+                            {#each Array(numHours) as i (i)}
                                 {@const hour = i + 8}
                                 <div class="w-32 border-r border-outline-variant flex items-center justify-center py-2">
                                     <span class="text-xs text-on-surface-variant">{formatHourLabel(hour)}</span>
@@ -538,7 +810,7 @@
                             {/each}
                         </div>
 
-                        {#each dayOrder.slice(0, 5) as day}
+                        {#each dayOrder.slice(0, 5) as day (day.key)}
                             {@const dayEvents = stackedMeetings.byDay?.[day.key] ?? []}
                             {@const dayStacks = Math.max(stackedMeetings.maxStacksByDay?.[day.key] ?? 1, 1)}
                             {@const dayHeight = Math.min(Math.max(120, dayStacks * 52), 190)}
@@ -548,7 +820,7 @@
                                 </div>
 
                                 <div class="relative flex-1 flex">
-                                    {#each Array(numHours) as _}
+                                    {#each Array(numHours) as i (`grid-${day.key}-${i}`)}
                                         <div class="w-32 border-r border-outline-variant"></div>
                                     {/each}
 
@@ -601,7 +873,7 @@
                 <div class="text-sm text-secondary">Invalid time range.</div>
             {:else if Object.values(bestMeetTimesByDay ?? {}).some((arr) => arr.length > 0)}
                 <div class="flex flex-col gap-2">
-                    {#each dayOrder.slice(0, 5) as day}
+                    {#each dayOrder.slice(0, 5) as day (day.key)}
                         {@const windows = bestMeetTimesByDay?.[day.key] ?? []}
                         {#if windows.length > 0}
                             <div class="flex flex-row gap-3 items-start justify-between bg-surface-container-low rounded-lg p-3 border border-outline-variant">
@@ -649,6 +921,11 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"/></svg>
                     </button>
                 </div>
+                {#if activeMeeting && activeDay}
+                    <div class="text-sm text-on-surface-variant">
+                        {activeDay.label}: {convertTo12Hour(activeMeeting.begin_time)} - {convertTo12Hour(activeMeeting.end_time)}
+                    </div>
+                {/if}
             </div>
         </div>
     </div>

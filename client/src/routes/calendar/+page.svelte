@@ -668,7 +668,8 @@
             event_preference.color_id = courseColor;
         }
 
-        //@ts-ignore
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-expect-error
         const convertedNotifications: ReminderSettings[] = notifications.map(n => ({
             time: (n.time).toString(),
             type: n.type,
@@ -838,6 +839,7 @@
                     jwt_token = await API.getJwtToken();
                     if (!jwt_token) {
                         // No JWT token for current environment, redirect to welcome page
+                        // eslint-disable-next-line svelte/no-navigation-without-resolve
                         goto('/');
                         return;
                     }
@@ -859,6 +861,7 @@
         jwt_token = await API.getJwtToken();
         if (!jwt_token) {
             // No JWT token for current environment, redirect to welcome page
+            // eslint-disable-next-line svelte/no-navigation-without-resolve
             goto('/');
             return;
         }
