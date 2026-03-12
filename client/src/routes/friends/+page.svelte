@@ -32,11 +32,21 @@
     let schedulesLoadVersion = 0;
 
     type RawFriendMeeting = {
+        id?: number | string;
         begin_time: string;
         end_time: string;
-        day_of_week: string;
+        day_of_week?: string;
         start_date?: string;
         end_date?: string;
+        monday?: boolean;
+        tuesday?: boolean;
+        wednesday?: boolean;
+        thursday?: boolean;
+        friday?: boolean;
+        saturday?: boolean;
+        sunday?: boolean;
+        color?: string;
+        title_overrides?: Partial<Record<DayItem['key'], string>>;
         location?: {
             building?: {
                 name?: string;
@@ -52,6 +62,11 @@
         prefix?: string;
         course_number?: number | string;
         schedule_type?: string;
+        professor?: {
+            first_name?: string;
+            last_name?: string;
+            email?: string;
+        };
         term?: {
             uid?: number | string;
             season?: string;
@@ -93,8 +108,10 @@
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     }
 
-    function mapFriendCourses(data: FriendProcessedEventsResponse, friendId: string): Course[] {
-        const processedCourses = Array.isArray(data?.processed_courses) ? (data.processed_courses as RawFriendCourse[]) : [];
+    function mapFriendCourses(data: FriendProcessedEventsResponse & { classes?: RawFriendCourse[] }, friendId: string): Course[] {
+        const processedCourses = Array.isArray(data?.processed_courses)
+            ? (data.processed_courses as RawFriendCourse[])
+            : (Array.isArray(data?.classes) ? data.classes : []);
         return processedCourses.map((c, ci: number) => ({
             title: c.title,
             prefix: c.subject ?? c.prefix ?? '',
@@ -102,16 +119,25 @@
             schedule_type: c.schedule_type ?? '',
             term: { uid: Number(c.term?.uid ?? 0), season: c.term?.season ?? '', year: Number(c.term?.year ?? 0) },
             professor: {
-                first_name: c.instructors?.[0]?.first_name ?? '',
-                last_name: c.instructors?.[0]?.last_name ?? '',
-                email: c.instructors?.[0]?.email ?? ''
+                first_name: c.professor?.first_name ?? c.instructors?.[0]?.first_name ?? '',
+                last_name: c.professor?.last_name ?? c.instructors?.[0]?.last_name ?? '',
+                email: c.professor?.email ?? c.instructors?.[0]?.email ?? ''
             },
             meeting_times: (Array.isArray(c.meeting_times) ? c.meeting_times : []).map((m, mi: number) => {
                 const begin = to24Hour(m.begin_time);
                 const end = to24Hour(m.end_time);
                 const dayKey = String(m.day_of_week ?? '').toLowerCase() as DayItem['key'];
+                const hasDayFlags = (
+                    m.monday !== undefined ||
+                    m.tuesday !== undefined ||
+                    m.wednesday !== undefined ||
+                    m.thursday !== undefined ||
+                    m.friday !== undefined ||
+                    m.saturday !== undefined ||
+                    m.sunday !== undefined
+                );
                 return {
-                    id: `${friendId}-${ci}-${mi}-${dayKey}`,
+                    id: m.id ?? `${friendId}-${ci}-${mi}-${dayKey}`,
                     begin_time: begin,
                     end_time: end,
                     start_date: m.start_date ?? '',
@@ -123,13 +149,15 @@
                         },
                         room: m.location?.room ?? ''
                     },
-                    monday: dayKey === 'monday',
-                    tuesday: dayKey === 'tuesday',
-                    wednesday: dayKey === 'wednesday',
-                    thursday: dayKey === 'thursday',
-                    friday: dayKey === 'friday',
-                    saturday: dayKey === 'saturday',
-                    sunday: dayKey === 'sunday'
+                    monday: hasDayFlags ? Boolean(m.monday) : dayKey === 'monday',
+                    tuesday: hasDayFlags ? Boolean(m.tuesday) : dayKey === 'tuesday',
+                    wednesday: hasDayFlags ? Boolean(m.wednesday) : dayKey === 'wednesday',
+                    thursday: hasDayFlags ? Boolean(m.thursday) : dayKey === 'thursday',
+                    friday: hasDayFlags ? Boolean(m.friday) : dayKey === 'friday',
+                    saturday: hasDayFlags ? Boolean(m.saturday) : dayKey === 'saturday',
+                    sunday: hasDayFlags ? Boolean(m.sunday) : dayKey === 'sunday',
+                    color: m.color,
+                    title_overrides: m.title_overrides
                 };
             })
         }));
@@ -523,13 +551,17 @@
         try {
             const coursesByFriend = await Promise.all(friendIdentities.map(async (friend) => {
                 try {
-                    const status = await API.friendIsProcessed(friend.id, termUid);
-                    if (!status.processed) {
-                        return { id: friend.id, courses: [] as Course[] };
-                    }
                     const response = await API.getFriendProcessedEvents(friend.id, termUid);
                     return { id: friend.id, courses: mapFriendCourses(response, friend.id) };
                 } catch (error) {
+                    try {
+                        const status = await API.friendIsProcessed(friend.id, termUid);
+                        if (!status.processed) {
+                            return { id: friend.id, courses: [] as Course[] };
+                        }
+                    } catch (statusError) {
+                        console.error(`Failed to check processed status for ${friend.id}`, statusError);
+                    }
                     console.error(`Failed to load schedule for ${friend.id}`, error);
                     return { id: friend.id, courses: [] as Course[] };
                 }
@@ -655,131 +687,144 @@
     });
 </script>
 
-<div class="flex flex-col gap-4 justify-center items-center h-full mt-4 w-full px-3">
-    <div class="flex flex-col gap-3 w-full max-w-3xl">
+<div class="flex flex-col gap-3 justify-center items-center h-full mt-2 w-full px-3">
+    <div class="flex flex-col gap-2.5 w-full max-w-3xl">
         {#if pageError}
             <div class="text-sm text-error">{pageError}</div>
         {/if}
-        <div class="flex flex-col gap-2">
-            <div class="text-sm text-on-surface-variant">Send friend request</div>
-            <div class="flex flex-row gap-2 items-center flex-wrap">
-                <TextFieldOutlined
-                    label="Friend ID"
-                    bind:value={sendFriendIdInput}
-                    onkeydown={(e) => {
-                        if (e.key === 'Enter') {
-                            sendFriendRequest();
-                        }
-                    }}
-                />
-                <button
-                    class="px-3 py-2 rounded bg-primary text-on-primary text-sm disabled:opacity-50"
-                    disabled={actionLoadingId === 'send-request' || !sendFriendIdInput.trim()}
-                    onclick={sendFriendRequest}
-                >
-                    Send
-                </button>
+        <div class="flex flex-col gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2">
+            <div class="flex flex-col gap-2">
+                <div class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Send friend request</div>
+                <div class="flex flex-row gap-2 items-center flex-wrap sm:flex-nowrap">
+                    <TextFieldOutlined
+                        label="Friend ID"
+                        bind:value={sendFriendIdInput}
+                        onkeydown={(e) => {
+                            if (e.key === 'Enter') {
+                                sendFriendRequest();
+                            }
+                        }}
+                    />
+                    <button
+                        class="h-10 px-3 rounded bg-primary text-on-primary text-sm whitespace-nowrap disabled:opacity-50"
+                        disabled={actionLoadingId === 'send-request' || !sendFriendIdInput.trim()}
+                        onclick={sendFriendRequest}
+                    >
+                        Send
+                    </button>
+                </div>
             </div>
-        </div>
-        <div class="flex flex-col gap-2">
-            <div class="text-sm text-on-surface-variant">Incoming requests</div>
-            {#if requestsLoading}
-                <div class="text-xs text-on-surface-variant">Loading requests...</div>
-            {:else if incomingRequests.length === 0}
-                <div class="text-xs text-on-surface-variant">No incoming requests.</div>
-            {:else}
-                {#each incomingRequests as req (req.request_id)}
-                    <div class="flex flex-row items-center justify-between bg-surface-container-low rounded px-3 py-2 border border-outline-variant">
-                        <div class="text-sm">{req.from.name} ({req.from.id})</div>
-                        <div class="flex flex-row gap-2">
-                            <button
-                                class="px-2 py-1 rounded bg-primary text-on-primary text-xs disabled:opacity-50"
-                                disabled={actionLoadingId !== '' && actionLoadingId !== `accept-${req.request_id}`}
-                                onclick={() => acceptRequest(req.request_id)}
-                            >
-                                Accept
-                            </button>
-                            <button
-                                class="px-2 py-1 rounded bg-error text-on-error text-xs disabled:opacity-50"
-                                disabled={actionLoadingId !== '' && actionLoadingId !== `decline-${req.request_id}`}
-                                onclick={() => declineRequest(req.request_id)}
-                            >
-                                Decline
-                            </button>
+
+            {#if requestsLoading || incomingRequests.length > 0 || outgoingRequests.length > 0}
+                <div class="h-px bg-outline-variant"></div>
+                <div class="flex flex-col gap-1.5">
+                    <div class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Requests</div>
+                    {#if requestsLoading}
+                        <div class="text-xs text-on-surface-variant">Loading requests...</div>
+                    {:else}
+                        <div class="grid gap-1.5 md:grid-cols-2">
+                            {#if incomingRequests.length > 0}
+                                <div class="flex flex-col gap-1">
+                                    <div class="text-[11px] font-medium uppercase tracking-wide text-on-surface-variant">Incoming</div>
+                                    {#each incomingRequests as req (req.request_id)}
+                                        <div class="flex flex-row items-center justify-between gap-2 bg-surface-container-lowest rounded-md px-2 py-1.5 border border-outline-variant">
+                                            <div class="text-sm truncate">{req.from.name} ({req.from.id})</div>
+                                            <div class="flex flex-row gap-1 shrink-0">
+                                                <button
+                                                    class="px-2 py-1 rounded bg-primary text-on-primary text-xs disabled:opacity-50"
+                                                    disabled={actionLoadingId !== '' && actionLoadingId !== `accept-${req.request_id}`}
+                                                    onclick={() => acceptRequest(req.request_id)}
+                                                >
+                                                    Accept
+                                                </button>
+                                                <button
+                                                    class="px-2 py-1 rounded bg-error text-on-error text-xs disabled:opacity-50"
+                                                    disabled={actionLoadingId !== '' && actionLoadingId !== `decline-${req.request_id}`}
+                                                    onclick={() => declineRequest(req.request_id)}
+                                                >
+                                                    Decline
+                                                </button>
+                                            </div>
+                                        </div>
+                                    {/each}
+                                </div>
+                            {/if}
+
+                            {#if outgoingRequests.length > 0}
+                                <div class="flex flex-col gap-1">
+                                    <div class="text-[11px] font-medium uppercase tracking-wide text-on-surface-variant">Outgoing</div>
+                                    {#each outgoingRequests as req (req.request_id)}
+                                        <div class="flex flex-row items-center justify-between gap-2 bg-surface-container-lowest rounded-md px-2 py-1.5 border border-outline-variant">
+                                            <div class="text-sm truncate">{req.to.name} ({req.to.id})</div>
+                                            <button
+                                                class="px-2 py-1 rounded bg-error text-on-error text-xs shrink-0 disabled:opacity-50"
+                                                disabled={actionLoadingId !== '' && actionLoadingId !== `cancel-${req.request_id}`}
+                                                onclick={() => cancelRequest(req.request_id)}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    {/each}
+                                </div>
+                            {/if}
                         </div>
-                    </div>
-                {/each}
+                    {/if}
+                </div>
             {/if}
-        </div>
-        <div class="flex flex-col gap-2">
-            <div class="text-sm text-on-surface-variant">Outgoing requests</div>
-            {#if requestsLoading}
-                <div class="text-xs text-on-surface-variant">Loading requests...</div>
-            {:else if outgoingRequests.length === 0}
-                <div class="text-xs text-on-surface-variant">No outgoing requests.</div>
-            {:else}
-                {#each outgoingRequests as req (req.request_id)}
-                    <div class="flex flex-row items-center justify-between bg-surface-container-low rounded px-3 py-2 border border-outline-variant">
-                        <div class="text-sm">{req.to.name} ({req.to.id})</div>
-                        <button
-                            class="px-2 py-1 rounded bg-error text-on-error text-xs disabled:opacity-50"
-                            disabled={actionLoadingId !== '' && actionLoadingId !== `cancel-${req.request_id}`}
-                            onclick={() => cancelRequest(req.request_id)}
-                        >
-                            Cancel
-                        </button>
+
+            <div class="h-px bg-outline-variant"></div>
+            <div class="flex flex-row gap-2 items-center flex-wrap">
+                <div class="text-xs font-medium uppercase tracking-wide text-on-surface-variant whitespace-nowrap">Primary</div>
+                <SelectOutlined
+                    label=""
+                    options={[
+                        { text: 'You', value: 'you' },
+                        ...friendList
+                            .filter((f) => selectedFriends.includes(f.id))
+                            .map((f) => ({ text: f.name, value: f.id }))
+                    ]}
+                    bind:value={primaryUser}
+                />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <div class="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Friends</div>
+                {#if friendsLoading || schedulesLoading}
+                    <div class="text-xs text-on-surface-variant">Loading friends...</div>
+                {:else if friendList.length === 0}
+                    <div class="text-xs text-on-surface-variant">No accepted friends yet.</div>
+                {:else}
+                    <div class="flex flex-wrap gap-1.5">
+                        {#each friendList as friend (friend.id)}
+                            <div class="flex flex-row gap-1 items-center border border-outline-variant rounded-md px-1.5 py-1">
+                                <Chip
+                                    variant="input"
+                                    selected={selectedFriends.includes(friend.id)}
+                                    onclick={() => {
+                                        const exists = selectedFriends.includes(friend.id);
+                                        const next = exists
+                                            ? selectedFriends.filter((id) => id !== friend.id)
+                                            : [...selectedFriends, friend.id];
+                                        selectedFriends = next;
+                                        if (primaryUser !== 'you' && !next.includes(primaryUser)) {
+                                            primaryUser = 'you';
+                                        }
+                                    }}
+                                >
+                                    {friend.name}
+                                </Chip>
+                                <button
+                                    class="px-2 py-1 rounded bg-error text-on-error text-xs disabled:opacity-50"
+                                    disabled={actionLoadingId !== '' && actionLoadingId !== `unfriend-${friend.id}`}
+                                    onclick={() => unfriend(friend.id)}
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        {/each}
                     </div>
-                {/each}
-            {/if}
-        </div>
-        <div class="flex flex-row gap-3 items-center flex-wrap">
-            <div class="text-sm text-on-surface-variant">Friends:</div>
-            {#if friendsLoading || schedulesLoading}
-                <div class="text-xs text-on-surface-variant">Loading friends...</div>
-            {:else if friendList.length === 0}
-                <div class="text-xs text-on-surface-variant">No accepted friends yet.</div>
-            {:else}
-                {#each friendList as friend (friend.id)}
-                    <div class="flex flex-row gap-2 items-center">
-                        <Chip
-                            variant="input"
-                            selected={selectedFriends.includes(friend.id)}
-                            onclick={() => {
-                                const exists = selectedFriends.includes(friend.id);
-                                const next = exists
-                                    ? selectedFriends.filter((id) => id !== friend.id)
-                                    : [...selectedFriends, friend.id];
-                                selectedFriends = next;
-                                if (primaryUser !== 'you' && !next.includes(primaryUser)) {
-                                    primaryUser = 'you';
-                                }
-                            }}
-                        >
-                            {friend.name}
-                        </Chip>
-                        <button
-                            class="px-2 py-1 rounded bg-error text-on-error text-xs disabled:opacity-50"
-                            disabled={actionLoadingId !== '' && actionLoadingId !== `unfriend-${friend.id}`}
-                            onclick={() => unfriend(friend.id)}
-                        >
-                            Remove
-                        </button>
-                    </div>
-                {/each}
-            {/if}
-        </div>
-        <div class="flex flex-row gap-3 items-center">
-            <div class="text-sm text-on-surface-variant">Primary:</div>
-            <SelectOutlined
-                label=""
-                options={[
-                    { text: 'You', value: 'you' },
-                    ...friendList
-                        .filter((f) => selectedFriends.includes(f.id))
-                        .map((f) => ({ text: f.name, value: f.id }))
-                ]}
-                bind:value={primaryUser}
-            />
+                {/if}
+            </div>
         </div>
     </div>
     <div class="w-full max-w-3xl">
@@ -797,12 +842,13 @@
         {#if Object.values(stackedMeetings.byDay ?? {}).some((arr) => arr.length > 0)}
             {@const latestHour = getLatestEndHourFromBlocks()}
             {@const numHours = latestHour - 8 + 1}
+            {@const hourIndices = Array.from({ length: numHours }, (_, i) => i)}
             <div class="flex flex-col w-full h-full overflow-hidden">
                 <div class="flex-1 overflow-x-auto overflow-y-hidden">
                     <div class="inline-flex flex-col min-w-full h-full">
                         <div class="flex flex-row border-b border-outline-variant bg-surface-container-lowest sticky top-0 z-10">
                             <div class="w-24 border-r border-outline-variant"></div>
-                            {#each Array(numHours) as i (i)}
+                            {#each hourIndices as i (i)}
                                 {@const hour = i + 8}
                                 <div class="w-32 border-r border-outline-variant flex items-center justify-center py-2">
                                     <span class="text-xs text-on-surface-variant">{formatHourLabel(hour)}</span>
@@ -820,7 +866,7 @@
                                 </div>
 
                                 <div class="relative flex-1 flex">
-                                    {#each Array(numHours) as i (`grid-${day.key}-${i}`)}
+                                    {#each hourIndices as i (`grid-${day.key}-${i}`)}
                                         <div class="w-32 border-r border-outline-variant"></div>
                                     {/each}
 
