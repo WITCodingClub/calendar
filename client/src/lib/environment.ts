@@ -20,7 +20,7 @@ export const ENVIRONMENTS: Record<Environment, EnvironmentConfig> = {
     prod: {
         name: 'prod',
         displayName: 'Production',
-        baseUrl: 'https://server-calendar.witcc.dev'
+        baseUrl: 'https://calendar.witcc.dev'
     }
 };
 
