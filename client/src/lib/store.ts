@@ -33,7 +33,7 @@ export const userSettings = writable<UserSettings | undefined>(undefined);
 export const icsUrl = writable<string | undefined>(undefined);
 
 function migrateIcsUrl(url: string): string {
-	return url.replace('server.calendar.witcc.dev', 'server-calendar.witcc.dev');
+	return url.replace('server.calendar.witcc.dev', 'calendar.witcc.dev');
 }
 
 if (browser) {

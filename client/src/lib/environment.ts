@@ -20,7 +20,7 @@ export const ENVIRONMENTS: Record<Environment, EnvironmentConfig> = {
     prod: {
         name: 'prod',
         displayName: 'Production',
-        baseUrl: 'https://server-calendar.witcc.dev'
+        baseUrl: 'https://calendar.witcc.dev'
     }
 };
 
@@ -35,7 +35,7 @@ export class EnvironmentManager {
     public static async getEnvironmentData(): Promise<StoredEnvironmentData> {
         const result = await chrome.storage.local.get(this.STORAGE_KEY);
         return result[this.STORAGE_KEY] || {
-            current_environment: 'dev',
+            current_environment: 'prod',
             jwt_tokens: {}
         };
     }
