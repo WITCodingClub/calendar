@@ -130,16 +130,54 @@
         }
     }
 
-    async function signIn() {
+    // Obtains a Google OAuth access token for the signed-in Google account.
+    // The backend verifies this token with Google and derives the account email
+    // from it, so the server never has to trust a client-supplied email.
+    async function getGoogleAccessToken(): Promise<string> {
+        // getAuthToken returns a bare string on older Chrome and { token } on
+        // newer MV3 builds — handle both.
+        const result: unknown = await chrome.identity.getAuthToken({ interactive: true });
+        const token = typeof result === 'string' ? result : (result as { token?: string } | null)?.token;
+        if (!token) {
+            throw new Error('Could not obtain a Google sign-in token');
+        }
+        return token;
+    }
+
+    async function signIn(isRetry = false) {
+        let accessToken: string;
+        try {
+            accessToken = await getGoogleAccessToken();
+        } catch (err) {
+            console.error('Google auth error:', err);
+            error = 'google_signin_failed';
+            snackbar('Could not sign in with Google: ' + err, undefined, true);
+            return;
+        }
+
         try {
             const baseUrl = await API.baseUrl;
             const response = await fetch(`${baseUrl}/user/onboard`, {
                 method: 'POST',
-                body: JSON.stringify({email: schoolEmail, preferred_name: preferredName}),
+                body: JSON.stringify({ google_access_token: accessToken, preferred_name: preferredName }),
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
+
+            // A cached Google token may have expired; drop it and retry once.
+            if (response.status === 401 && !isRetry) {
+                await chrome.identity.removeCachedAuthToken({ token: accessToken });
+                return signIn(true);
+            }
+
+            // 403 = the Google account isn't an @wit.edu account.
+            if (response.status === 403) {
+                await chrome.identity.removeCachedAuthToken({ token: accessToken });
+                error = 'not_wit_account';
+                snackbar('Please sign in with your @wit.edu Google account.', undefined, true);
+                return;
+            }
 
             if (!response.ok) {
                 const responseText = await response.text();
@@ -181,6 +219,12 @@
         {:else if error == 'Make'}
             <ErrorNotice title="Failed to fetch data!" error={error} includeStatusLink={false} />
             <Button variant="elevated" square onclick={fetchSchoolEmail}>Try Again</Button>
+        {:else if error == 'not_wit_account'}
+            <ErrorNotice title="Wrong Google account" error="Please sign in with your @wit.edu Google account, then try again." includeStatusLink={false} />
+            <Button variant="elevated" square onclick={() => signIn()}>Try Again</Button>
+        {:else if error == 'google_signin_failed'}
+            <ErrorNotice title="Google sign-in failed" error="We couldn't sign you in with Google. Please try again." includeStatusLink={false} />
+            <Button variant="elevated" square onclick={() => signIn()}>Try Again</Button>
         {:else}
             <h1 class="text-3xl font-extrabold text-center text-primary mb-6">Signing in!</h1>
             <LoadingIndicator size={64} />
