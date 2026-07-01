@@ -130,9 +130,10 @@
         }
     }
 
-    // Obtains a Google OAuth access token for the signed-in Google account.
-    // The backend verifies this token with Google and derives the account email
-    // from it, so the server never has to trust a client-supplied email.
+    // Obtains a Google OAuth access token for the user's Google account (their
+    // personal account — the same one they sync calendars to). The backend
+    // verifies this token with Google and keys the account to the verified
+    // email, so the server never trusts a client-supplied email.
     async function getGoogleAccessToken(): Promise<string> {
         // getAuthToken returns a bare string on older Chrome and { token } on
         // newer MV3 builds — handle both.
@@ -169,14 +170,6 @@
             if (response.status === 401 && !isRetry) {
                 await chrome.identity.removeCachedAuthToken({ token: accessToken });
                 return signIn(true);
-            }
-
-            // 403 = the Google account isn't an @wit.edu account.
-            if (response.status === 403) {
-                await chrome.identity.removeCachedAuthToken({ token: accessToken });
-                error = 'not_wit_account';
-                snackbar('Please sign in with your @wit.edu Google account.', undefined, true);
-                return;
             }
 
             if (!response.ok) {
@@ -219,9 +212,6 @@
         {:else if error == 'Make'}
             <ErrorNotice title="Failed to fetch data!" error={error} includeStatusLink={false} />
             <Button variant="elevated" square onclick={fetchSchoolEmail}>Try Again</Button>
-        {:else if error == 'not_wit_account'}
-            <ErrorNotice title="Wrong Google account" error="Please sign in with your @wit.edu Google account, then try again." includeStatusLink={false} />
-            <Button variant="elevated" square onclick={() => signIn()}>Try Again</Button>
         {:else if error == 'google_signin_failed'}
             <ErrorNotice title="Google sign-in failed" error="We couldn't sign you in with Google. Please try again." includeStatusLink={false} />
             <Button variant="elevated" square onclick={() => signIn()}>Try Again</Button>
